@@ -19,6 +19,7 @@ Implemented so far:
 - Generic crossplot analytics endpoint
 - Histogram analytics endpoint with optional grouping and indicator stats
 - Boxplot analytics endpoint with optional grouping and indicator stats
+- JSON/CSV exports for filtered samples and analytics results
 - First rock physics endpoint for a critical-porosity + Gassmann workflow
 - Automated tests for every implemented increment
 - Ruff lint configuration
@@ -130,7 +131,7 @@ python -m pytest
 Current expected result:
 
 ```text
-26 passed
+34 passed
 ```
 
 ## Run Lint
@@ -375,6 +376,58 @@ The response includes one or more boxplot series with:
 - count
 - P10/P50/P90 and other indicator stats
 
+## Export Endpoints
+
+All export endpoints use `POST` so they can receive the same filter and analytics request bodies used
+by the interactive API.
+
+### Samples Export
+
+```http
+POST /api/exports/samples/json
+POST /api/exports/samples/csv
+```
+
+Example request:
+
+```json
+{
+  "filters": {
+    "wells": ["1-RJS-628"],
+    "rock_types": ["Floatstone"]
+  }
+}
+```
+
+The JSON endpoint returns:
+
+- `row_count`
+- `rows`
+
+The CSV endpoint returns `text/csv` with a `Content-Disposition` attachment header.
+
+### Analytics Export
+
+```http
+POST /api/exports/analytics/crossplot/json
+POST /api/exports/analytics/crossplot/csv
+
+POST /api/exports/analytics/histogram/json
+POST /api/exports/analytics/histogram/csv
+
+POST /api/exports/analytics/boxplot/json
+POST /api/exports/analytics/boxplot/csv
+```
+
+These endpoints accept the same request bodies as:
+
+- `POST /api/analytics/crossplot`
+- `POST /api/analytics/histogram`
+- `POST /api/analytics/boxplot`
+
+CSV exports flatten the chart-ready payload into tabular rows suitable for download or downstream
+analysis.
+
 ### Gassmann Rock Physics Model
 
 ```http
@@ -441,8 +494,9 @@ or `AVO`.
 
 ## Next Recommended Steps
 
-1. Add export contracts for JSON/CSV and later PNG export support.
-2. Add saved-analysis entities for filters, comments, selected models, and results.
-3. Resolve the RockPhyPy/Matplotlib compatibility issue.
-4. Add `softsand` and `AVO` model endpoints.
-5. Add local Docker Compose for PostgreSQL and MLflow.
+1. Add saved-analysis entities for filters, comments, selected models, and results.
+2. Add crossplot indicators: Pearson correlation and MAE.
+3. Add PNG export support later when frontend chart rendering exists.
+4. Resolve the RockPhyPy/Matplotlib compatibility issue.
+5. Add `softsand` and `AVO` model endpoints.
+6. Add local Docker Compose for PostgreSQL and MLflow.

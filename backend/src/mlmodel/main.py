@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from mlmodel.api.routes.analytics import router as analytics_router
+from mlmodel.api.routes.exports import router as exports_router
 from mlmodel.api.routes.health import router as health_router
 from mlmodel.api.routes.rock_physics import router as rock_physics_router
 from mlmodel.api.routes.samples import router as samples_router
@@ -17,6 +18,7 @@ def create_app() -> FastAPI:
     )
     app.include_router(health_router)
     app.include_router(analytics_router, prefix="/api")
+    app.include_router(exports_router, prefix="/api")
     app.include_router(rock_physics_router, prefix="/api")
     app.include_router(samples_router, prefix="/api")
     return app
