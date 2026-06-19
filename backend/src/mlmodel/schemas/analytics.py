@@ -2,6 +2,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from mlmodel.schemas.filters import SampleFilters
+
 NumericSampleField = Literal[
     "depth_m",
     "porosity_percent",
@@ -21,6 +23,7 @@ class CrossplotRequest(BaseModel):
     x_field: NumericSampleField
     y_field: NumericSampleField
     color_by: CategorySampleField | None = None
+    filters: SampleFilters | None = None
 
 
 class CrossplotPoint(BaseModel):
@@ -54,6 +57,7 @@ class HistogramRequest(BaseModel):
     field: NumericSampleField
     bins: int = Field(default=10, ge=1, le=100)
     group_by: CategorySampleField | None = None
+    filters: SampleFilters | None = None
 
 
 class HistogramBin(BaseModel):
@@ -81,6 +85,7 @@ class HistogramResponse(BaseModel):
 class BoxplotRequest(BaseModel):
     field: NumericSampleField
     group_by: CategorySampleField | None = None
+    filters: SampleFilters | None = None
 
 
 class BoxplotSeries(BaseModel):

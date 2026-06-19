@@ -13,6 +13,8 @@ Implemented so far:
 - Health check endpoint
 - Synthetic petrophysical sample fixtures
 - Sample listing and summary endpoints
+- Expanded sample detail endpoint
+- Shared sample filters for listing, summary, crossplot, histogram, and boxplot
 - Domain unit conversion helpers
 - Generic crossplot analytics endpoint
 - Histogram analytics endpoint with optional grouping and indicator stats
@@ -48,6 +50,11 @@ MLModel/
   data/
     fixtures/
       samples.csv
+      basic_petrophysics.csv
+      petrography.csv
+      mineralogy_total.csv
+      mineralogy_clays.csv
+      sonic_velocity.csv
 
   infra/
     README.md
@@ -123,7 +130,7 @@ python -m pytest
 Current expected result:
 
 ```text
-16 passed
+26 passed
 ```
 
 ## Run Lint
@@ -202,6 +209,26 @@ Each sample includes:
 - `Vp` in m/s
 - confining pressure in psi
 
+Supported query filters:
+
+- `sample_codes`
+- `wells`
+- `rock_types`
+- `lithologies`
+- `min_depth_m`
+- `max_depth_m`
+- `min_porosity_percent`
+- `max_porosity_percent`
+- `min_confining_pressure_psi`
+- `max_confining_pressure_psi`
+
+List filters can be repeated or comma-separated:
+
+```http
+GET /api/samples?wells=1-RJS-628&rock_types=Floatstone
+GET /api/samples?sample_codes=F244V,G2441V
+```
+
 ### Samples Summary
 
 ```http
@@ -217,6 +244,35 @@ Returns dashboard-style KPIs:
 - average porosity in percent
 - average `Vp` in m/s
 
+The same query filters supported by `GET /api/samples` can be used here.
+
+### Sample Detail
+
+```http
+GET /api/samples/{sample_code}
+```
+
+Example:
+
+```http
+GET /api/samples/G2441V
+```
+
+Returns an expanded sample payload with:
+
+- base sample data
+- basic petrophysics
+- petrography
+- total DRX mineralogy
+- clay DRX mineralogy
+- sonic velocity
+
+Unknown samples return:
+
+```http
+404 Not Found
+```
+
 ### Crossplot Analytics
 
 ```http
@@ -229,7 +285,11 @@ Example request:
 {
   "x_field": "porosity_percent",
   "y_field": "vp_m_s",
-  "color_by": "rock_type"
+  "color_by": "rock_type",
+  "filters": {
+    "wells": ["1-RJS-628"],
+    "rock_types": ["Floatstone"]
+  }
 }
 ```
 
@@ -261,7 +321,10 @@ Example request:
 {
   "field": "porosity_percent",
   "bins": 10,
-  "group_by": "rock_type"
+  "group_by": "rock_type",
+  "filters": {
+    "min_porosity_percent": 20
+  }
 }
 ```
 
@@ -294,7 +357,10 @@ Example request:
 ```json
 {
   "field": "vp_m_s",
-  "group_by": "rock_type"
+  "group_by": "rock_type",
+  "filters": {
+    "wells": ["1-RJS-628"]
+  }
 }
 ```
 
@@ -375,9 +441,8 @@ or `AVO`.
 
 ## Next Recommended Steps
 
-1. Add `GET /api/samples/{sample_code}` with expanded petrophysical details.
-2. Add more sample fixture fields for mineralogy and sonic velocity.
-3. Add export contracts for JSON/CSV and later PNG export support.
-4. Resolve the RockPhyPy/Matplotlib compatibility issue.
-5. Add `softsand` and `AVO` model endpoints.
-6. Add local Docker Compose for PostgreSQL and MLflow.
+1. Add export contracts for JSON/CSV and later PNG export support.
+2. Add saved-analysis entities for filters, comments, selected models, and results.
+3. Resolve the RockPhyPy/Matplotlib compatibility issue.
+4. Add `softsand` and `AVO` model endpoints.
+5. Add local Docker Compose for PostgreSQL and MLflow.

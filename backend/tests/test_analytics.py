@@ -29,6 +29,26 @@ def test_crossplot_returns_points_for_selected_axes() -> None:
     }
 
 
+def test_crossplot_applies_filters() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/analytics/crossplot",
+        json={
+            "x_field": "porosity_percent",
+            "y_field": "vp_m_s",
+            "filters": {
+                "wells": ["1-RJS-628"],
+                "rock_types": ["Floatstone"],
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert [point["sample_code"] for point in payload["points"]] == ["G2441V"]
+
+
 def test_crossplot_rejects_unknown_numeric_field() -> None:
     client = TestClient(create_app())
 
@@ -91,6 +111,27 @@ def test_histogram_can_group_by_category() -> None:
     assert round(groups["Boundstone"]["stats"]["mean"], 1) == 4184.5
     assert groups["Mudstone"]["sample_count"] == 1
     assert groups["Mudstone"]["bins"][0]["count"] == 1
+
+
+def test_histogram_applies_filters_before_counting_bins() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/analytics/histogram",
+        json={
+            "field": "porosity_percent",
+            "bins": 2,
+            "filters": {
+                "min_porosity_percent": 23,
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["sample_count"] == 3
+    assert payload["stats"]["count"] == 3
+    assert [bin_["count"] for bin_ in payload["bins"]] == [2, 1]
 
 
 def test_histogram_rejects_invalid_bin_count() -> None:
@@ -156,3 +197,24 @@ def test_boxplot_can_group_by_category() -> None:
     assert round(groups["Boundstone"]["maximum"], 1) == 4339.0
     assert groups["Mudstone"]["count"] == 1
     assert groups["Mudstone"]["median"] == 6455.0
+
+
+def test_boxplot_applies_filters_before_grouping() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/analytics/boxplot",
+        json={
+            "field": "vp_m_s",
+            "group_by": "well",
+            "filters": {
+                "wells": ["1-RJS-628"],
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload["series"]) == 1
+    assert payload["series"][0]["group"] == "1-RJS-628"
+    assert payload["series"][0]["count"] == 2

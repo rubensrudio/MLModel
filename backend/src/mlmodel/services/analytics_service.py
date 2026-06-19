@@ -15,6 +15,7 @@ from mlmodel.schemas.analytics import (
     HistogramSeries,
 )
 from mlmodel.schemas.samples import Sample
+from mlmodel.services.sample_filter import filter_samples
 
 
 class AnalyticsService:
@@ -22,7 +23,7 @@ class AnalyticsService:
         self._repository = repository
 
     def create_crossplot(self, request: CrossplotRequest) -> CrossplotResponse:
-        samples = self._repository.list_samples()
+        samples = filter_samples(self._repository.list_samples(), request.filters)
         return CrossplotResponse(
             x_field=request.x_field,
             y_field=request.y_field,
@@ -39,7 +40,7 @@ class AnalyticsService:
         )
 
     def create_histogram(self, request: HistogramRequest) -> HistogramResponse:
-        samples = self._repository.list_samples()
+        samples = filter_samples(self._repository.list_samples(), request.filters)
         values = [_numeric_value(sample, request.field) for sample in samples]
         if not values:
             return HistogramResponse(
@@ -80,7 +81,7 @@ class AnalyticsService:
         )
 
     def create_boxplot(self, request: BoxplotRequest) -> BoxplotResponse:
-        samples = self._repository.list_samples()
+        samples = filter_samples(self._repository.list_samples(), request.filters)
         grouped_values: dict[str | None, list[float]] = {}
 
         for sample in samples:

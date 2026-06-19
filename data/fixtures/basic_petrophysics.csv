@@ -1,0 +1,7 @@
+sample_code,porosity_fraction,permeability_md,grain_density_g_cm3,pore_volume_cm3,diameter_mm,confining_pressure_psi,fluid,klinkenberg,drying,sample_type
+F244V,0.192,1318.9,2.72,14.31,38.1,7500,NITROGENIO,Sim,Estufa convencional,P - Amostra Plugue
+G2441V,0.199,674.0,2.75,15.39,38.1,7500,NITROGENIO,Sim,Estufa convencional,P - Amostra Plugue
+F2424V,0.172,240.6,2.68,12.72,38.1,6500,NITROGENIO,Nao,Estufa convencional,P - Amostra Plugue
+F2416V,0.233,2965.8,2.71,18.45,38.1,6500,NITROGENIO,Sim,Estufa convencional,P - Amostra Plugue
+G2413V,0.232,2182.6,2.69,17.91,38.1,7000,NITROGENIO,Sim,Estufa convencional,P - Amostra Plugue
+H2450V,0.245,45702.0,2.66,20.12,38.1,7500,NITROGENIO,Sim,Estufa convencional,P - Amostra Plugue

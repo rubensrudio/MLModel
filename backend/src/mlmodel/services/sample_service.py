@@ -1,18 +1,23 @@
 from statistics import fmean
 
 from mlmodel.repositories.sample_repository import SampleRepository
-from mlmodel.schemas.samples import Sample, SamplesSummary
+from mlmodel.schemas.filters import SampleFilters
+from mlmodel.schemas.samples import Sample, SampleDetail, SamplesSummary
+from mlmodel.services.sample_filter import filter_samples
 
 
 class SampleService:
     def __init__(self, repository: SampleRepository) -> None:
         self._repository = repository
 
-    def list_samples(self) -> list[Sample]:
-        return self._repository.list_samples()
+    def list_samples(self, filters: SampleFilters | None = None) -> list[Sample]:
+        return filter_samples(self._repository.list_samples(), filters)
 
-    def get_summary(self) -> SamplesSummary:
-        samples = self.list_samples()
+    def get_sample_detail(self, sample_code: str) -> SampleDetail | None:
+        return self._repository.get_sample_detail(sample_code)
+
+    def get_summary(self, filters: SampleFilters | None = None) -> SamplesSummary:
+        samples = self.list_samples(filters)
         if not samples:
             return SamplesSummary(
                 sample_count=0,
