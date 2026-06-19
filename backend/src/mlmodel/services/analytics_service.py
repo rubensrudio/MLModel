@@ -1,5 +1,19 @@
+from statistics import fmean, pstdev
+
 from mlmodel.repositories.sample_repository import SampleRepository
-from mlmodel.schemas.analytics import CrossplotPoint, CrossplotRequest, CrossplotResponse
+from mlmodel.schemas.analytics import (
+    AnalyticsStats,
+    BoxplotRequest,
+    BoxplotResponse,
+    BoxplotSeries,
+    CrossplotPoint,
+    CrossplotRequest,
+    CrossplotResponse,
+    HistogramBin,
+    HistogramRequest,
+    HistogramResponse,
+    HistogramSeries,
+)
 from mlmodel.schemas.samples import Sample
 
 
@@ -24,6 +38,64 @@ class AnalyticsService:
             ],
         )
 
+    def create_histogram(self, request: HistogramRequest) -> HistogramResponse:
+        samples = self._repository.list_samples()
+        values = [_numeric_value(sample, request.field) for sample in samples]
+        if not values:
+            return HistogramResponse(
+                field=request.field,
+                group_by=request.group_by,
+                bins=[],
+                sample_count=0,
+                stats=None,
+                series=[],
+            )
+
+        grouped_values: dict[str | None, list[float]] = {}
+        if request.group_by:
+            for sample in samples:
+                group = _category_value(sample, request.group_by)
+                grouped_values.setdefault(group, []).append(_numeric_value(sample, request.field))
+
+        aggregate_bins = _histogram_bins(values, request.bins)
+        series = [
+            HistogramSeries(
+                group=group,
+                bins=_histogram_bins(group_values, request.bins),
+                sample_count=len(group_values),
+                stats=_stats(group_values),
+            )
+            for group, group_values in sorted(
+                grouped_values.items(),
+                key=lambda item: item[0] or "",
+            )
+        ]
+        return HistogramResponse(
+            field=request.field,
+            group_by=request.group_by,
+            bins=aggregate_bins,
+            sample_count=len(values),
+            stats=_stats(values),
+            series=series,
+        )
+
+    def create_boxplot(self, request: BoxplotRequest) -> BoxplotResponse:
+        samples = self._repository.list_samples()
+        grouped_values: dict[str | None, list[float]] = {}
+
+        for sample in samples:
+            group = _category_value(sample, request.group_by) if request.group_by else None
+            grouped_values.setdefault(group, []).append(_numeric_value(sample, request.field))
+
+        return BoxplotResponse(
+            field=request.field,
+            group_by=request.group_by,
+            series=[
+                _boxplot_series(group, values)
+                for group, values in sorted(grouped_values.items(), key=lambda item: item[0] or "")
+            ],
+        )
+
 
 def _numeric_value(sample: Sample, field: str) -> float:
     if field == "porosity_percent":
@@ -33,3 +105,78 @@ def _numeric_value(sample: Sample, field: str) -> float:
 
 def _category_value(sample: Sample, field: str) -> str:
     return str(getattr(sample, field))
+
+
+def _boxplot_series(group: str | None, values: list[float]) -> BoxplotSeries:
+    sorted_values = sorted(values)
+    return BoxplotSeries(
+        group=group,
+        count=len(sorted_values),
+        minimum=sorted_values[0],
+        q1=_percentile(sorted_values, 0.25),
+        median=_percentile(sorted_values, 0.50),
+        q3=_percentile(sorted_values, 0.75),
+        maximum=sorted_values[-1],
+        mean=fmean(sorted_values),
+        stats=_stats(sorted_values),
+    )
+
+
+def _percentile(sorted_values: list[float], fraction: float) -> float:
+    if len(sorted_values) == 1:
+        return sorted_values[0]
+
+    position = (len(sorted_values) - 1) * fraction
+    lower_index = int(position)
+    upper_index = min(lower_index + 1, len(sorted_values) - 1)
+    weight = position - lower_index
+    return sorted_values[lower_index] * (1 - weight) + sorted_values[upper_index] * weight
+
+
+def _histogram_bins(values: list[float], bin_count: int) -> list[HistogramBin]:
+    min_value = min(values)
+    max_value = max(values)
+    if min_value == max_value:
+        return [HistogramBin(start=min_value, end=max_value, count=len(values))]
+
+    width = (max_value - min_value) / bin_count
+    bins = [
+        HistogramBin(
+            start=min_value + index * width,
+            end=min_value + (index + 1) * width,
+            count=0,
+        )
+        for index in range(bin_count)
+    ]
+
+    counts = [0 for _ in bins]
+    for value in values:
+        index = int((value - min_value) / width)
+        if index == bin_count:
+            index -= 1
+        counts[index] += 1
+
+    return [
+        HistogramBin(start=bin_.start, end=bin_.end, count=count)
+        for bin_, count in zip(bins, counts, strict=True)
+    ]
+
+
+def _stats(values: list[float]) -> AnalyticsStats:
+    sorted_values = sorted(values)
+    mean = fmean(sorted_values)
+    standard_deviation = pstdev(sorted_values)
+    coefficient_variation = None if mean == 0 else standard_deviation / mean * 100
+
+    return AnalyticsStats(
+        count=len(sorted_values),
+        mean=mean,
+        median=_percentile(sorted_values, 0.5),
+        standard_deviation=standard_deviation,
+        coefficient_variation_percent=coefficient_variation,
+        minimum=sorted_values[0],
+        maximum=sorted_values[-1],
+        p10=_percentile(sorted_values, 0.1),
+        p50=_percentile(sorted_values, 0.5),
+        p90=_percentile(sorted_values, 0.9),
+    )

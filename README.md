@@ -15,6 +15,8 @@ Implemented so far:
 - Sample listing and summary endpoints
 - Domain unit conversion helpers
 - Generic crossplot analytics endpoint
+- Histogram analytics endpoint with optional grouping and indicator stats
+- Boxplot analytics endpoint with optional grouping and indicator stats
 - First rock physics endpoint for a critical-porosity + Gassmann workflow
 - Automated tests for every implemented increment
 - Ruff lint configuration
@@ -121,7 +123,7 @@ python -m pytest
 Current expected result:
 
 ```text
-11 passed
+16 passed
 ```
 
 ## Run Lint
@@ -247,6 +249,66 @@ Supported category fields:
 
 The response returns chart-ready points for a frontend charting library such as eCharts.
 
+### Histogram Analytics
+
+```http
+POST /api/analytics/histogram
+```
+
+Example request:
+
+```json
+{
+  "field": "porosity_percent",
+  "bins": 10,
+  "group_by": "rock_type"
+}
+```
+
+`group_by` is optional. When present, it can use:
+
+- `well`
+- `rock_type`
+- `lithology_micro`
+
+The response includes:
+
+- aggregate bins
+- grouped series when `group_by` is provided
+- sample count
+- mean
+- median
+- standard deviation
+- coefficient of variation
+- min/max
+- P10/P50/P90
+
+### Boxplot Analytics
+
+```http
+POST /api/analytics/boxplot
+```
+
+Example request:
+
+```json
+{
+  "field": "vp_m_s",
+  "group_by": "rock_type"
+}
+```
+
+The response includes one or more boxplot series with:
+
+- minimum
+- Q1
+- median
+- Q3
+- maximum
+- mean
+- count
+- P10/P50/P90 and other indicator stats
+
 ### Gassmann Rock Physics Model
 
 ```http
@@ -313,8 +375,9 @@ or `AVO`.
 
 ## Next Recommended Steps
 
-1. Add histogram and boxplot analytics endpoints.
+1. Add `GET /api/samples/{sample_code}` with expanded petrophysical details.
 2. Add more sample fixture fields for mineralogy and sonic velocity.
-3. Resolve the RockPhyPy/Matplotlib compatibility issue.
-4. Add `softsand` and `AVO` model endpoints.
-5. Add local Docker Compose for PostgreSQL and MLflow.
+3. Add export contracts for JSON/CSV and later PNG export support.
+4. Resolve the RockPhyPy/Matplotlib compatibility issue.
+5. Add `softsand` and `AVO` model endpoints.
+6. Add local Docker Compose for PostgreSQL and MLflow.

@@ -41,3 +41,118 @@ def test_crossplot_rejects_unknown_numeric_field() -> None:
     )
 
     assert response.status_code == 422
+
+
+def test_histogram_returns_counted_bins_for_selected_field() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/analytics/histogram",
+        json={
+            "field": "porosity_percent",
+            "bins": 3,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["field"] == "porosity_percent"
+    assert payload["group_by"] is None
+    assert payload["sample_count"] == 6
+    assert round(payload["stats"]["mean"], 2) == 21.22
+    assert round(payload["stats"]["p10"], 2) == 18.2
+    assert round(payload["stats"]["p50"], 2) == 21.55
+    assert round(payload["stats"]["p90"], 2) == 23.9
+    assert len(payload["bins"]) == 3
+    assert [bin_["count"] for bin_ in payload["bins"]] == [2, 1, 3]
+    assert round(payload["bins"][0]["start"], 1) == 17.2
+    assert round(payload["bins"][-1]["end"], 1) == 24.5
+    assert payload["series"] == []
+
+
+def test_histogram_can_group_by_category() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/analytics/histogram",
+        json={
+            "field": "vp_m_s",
+            "bins": 2,
+            "group_by": "rock_type",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    groups = {series["group"]: series for series in payload["series"]}
+    assert payload["group_by"] == "rock_type"
+    assert groups["Boundstone"]["sample_count"] == 2
+    assert groups["Boundstone"]["stats"]["count"] == 2
+    assert round(groups["Boundstone"]["stats"]["mean"], 1) == 4184.5
+    assert groups["Mudstone"]["sample_count"] == 1
+    assert groups["Mudstone"]["bins"][0]["count"] == 1
+
+
+def test_histogram_rejects_invalid_bin_count() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/analytics/histogram",
+        json={
+            "field": "vp_m_s",
+            "bins": 0,
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_boxplot_returns_statistics_for_selected_field() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/analytics/boxplot",
+        json={
+            "field": "porosity_percent",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["field"] == "porosity_percent"
+    assert payload["group_by"] is None
+    assert len(payload["series"]) == 1
+
+    series = payload["series"][0]
+    assert series["group"] is None
+    assert series["count"] == 6
+    assert round(series["minimum"], 1) == 17.2
+    assert round(series["q1"], 2) == 19.38
+    assert round(series["median"], 2) == 21.55
+    assert round(series["q3"], 2) == 23.28
+    assert round(series["maximum"], 1) == 24.5
+    assert round(series["mean"], 2) == 21.22
+    assert round(series["stats"]["p10"], 2) == 18.2
+    assert round(series["stats"]["p90"], 2) == 23.9
+
+
+def test_boxplot_can_group_by_category() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/analytics/boxplot",
+        json={
+            "field": "vp_m_s",
+            "group_by": "rock_type",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    groups = {series["group"]: series for series in payload["series"]}
+
+    assert groups["Boundstone"]["count"] == 2
+    assert round(groups["Boundstone"]["minimum"], 1) == 4030.0
+    assert round(groups["Boundstone"]["maximum"], 1) == 4339.0
+    assert groups["Mudstone"]["count"] == 1
+    assert groups["Mudstone"]["median"] == 6455.0
