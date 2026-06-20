@@ -22,6 +22,7 @@ Implemented so far:
 - JSON/CSV exports for filtered samples and analytics results
 - Crossplot indicators with sample count and Pearson correlation
 - Saved-analysis API with local in-memory persistence
+- Model-run API with optional saved-analysis linkage
 - First rock physics endpoint for a critical-porosity + Gassmann workflow
 - Automated tests for every implemented increment
 - Ruff lint configuration
@@ -533,6 +534,57 @@ where table_name = 'saved_analyses';
 
 Use `MLMODEL_POSTGRESQL_SCHEMA` if the table must be created outside `public`.
 
+## Model Run Endpoints
+
+Model runs persist model execution parameters and results. A run can optionally be linked to a saved
+analysis through `saved_analysis_id`.
+
+```http
+POST /api/model-runs
+GET /api/model-runs
+GET /api/model-runs?saved_analysis_id={analysis_id}
+GET /api/model-runs/{run_id}
+GET /api/analyses/{analysis_id}/model-runs
+POST /api/model-runs/rockphypy/gassmann
+```
+
+Example generic model run:
+
+```json
+{
+  "model_name": "rockphypy.gassmann",
+  "model_version": "0.1.0",
+  "engine": "local-gassmann-fallback",
+  "parameters": {
+    "porosity_fraction": 0.2
+  },
+  "result": {
+    "vp_m_s": 4659.0
+  },
+  "assumptions": [
+    "Gassmann low-frequency fluid substitution"
+  ],
+  "saved_analysis_id": null
+}
+```
+
+Example Gassmann run with persistence:
+
+```json
+{
+  "parameters": {
+    "mineral_bulk_modulus_gpa": 37.0,
+    "mineral_shear_modulus_gpa": 44.0,
+    "mineral_density_g_cm3": 2.65,
+    "fluid_bulk_modulus_gpa": 2.2,
+    "fluid_density_g_cm3": 1.0,
+    "porosity_fraction": 0.2,
+    "critical_porosity_fraction": 0.4
+  },
+  "saved_analysis_id": null
+}
+```
+
 ### Gassmann Rock Physics Model
 
 ```http
@@ -599,9 +651,8 @@ or `AVO`.
 
 ## Next Recommended Steps
 
-1. Add model-run persistence and connect saved analyses to model runs.
-2. Add MLflow Tracking Server and client integration.
-3. Add MAE when model/reference prediction series are available.
-4. Add PNG export support later when frontend chart rendering exists.
-5. Resolve the RockPhyPy/Matplotlib compatibility issue.
-6. Add `softsand` and `AVO` model endpoints.
+1. Add MLflow Tracking Server and client integration for model runs.
+2. Add MAE when model/reference prediction series are available.
+3. Add PNG export support later when frontend chart rendering exists.
+4. Resolve the RockPhyPy/Matplotlib compatibility issue.
+5. Add `softsand` and `AVO` model endpoints.

@@ -7,10 +7,12 @@ from mlmodel.api.routes.analyses import router as analyses_router
 from mlmodel.api.routes.analytics import router as analytics_router
 from mlmodel.api.routes.exports import router as exports_router
 from mlmodel.api.routes.health import router as health_router
+from mlmodel.api.routes.model_runs import router as model_runs_router
 from mlmodel.api.routes.rock_physics import router as rock_physics_router
 from mlmodel.api.routes.samples import router as samples_router
 from mlmodel.core.config import get_settings
 from mlmodel.repositories.analysis_repository_factory import create_analysis_repository
+from mlmodel.repositories.model_run_repository_factory import create_model_run_repository
 
 
 def create_app() -> FastAPI:
@@ -19,6 +21,7 @@ def create_app() -> FastAPI:
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         create_analysis_repository(settings)
+        create_model_run_repository(settings)
         yield
 
     app = FastAPI(
@@ -32,6 +35,7 @@ def create_app() -> FastAPI:
     app.include_router(analyses_router, prefix="/api")
     app.include_router(analytics_router, prefix="/api")
     app.include_router(exports_router, prefix="/api")
+    app.include_router(model_runs_router, prefix="/api")
     app.include_router(rock_physics_router, prefix="/api")
     app.include_router(samples_router, prefix="/api")
 
