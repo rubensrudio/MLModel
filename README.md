@@ -21,6 +21,7 @@ Implemented so far:
 - Boxplot analytics endpoint with optional grouping and indicator stats
 - JSON/CSV exports for filtered samples and analytics results
 - Crossplot indicators with sample count and Pearson correlation
+- Saved-analysis API with local in-memory persistence
 - First rock physics endpoint for a critical-porosity + Gassmann workflow
 - Automated tests for every implemented increment
 - Ruff lint configuration
@@ -438,6 +439,47 @@ These endpoints accept the same request bodies as:
 CSV exports flatten the chart-ready payload into tabular rows suitable for download or downstream
 analysis.
 
+## Saved Analysis Endpoints
+
+Saved analyses persist analysis configuration and optional result snapshots for later retrieval.
+The current implementation uses local in-memory persistence behind a repository interface. It is
+intended as the API contract before PostgreSQL is introduced.
+
+```http
+POST /api/analyses
+GET /api/analyses
+GET /api/analyses/{analysis_id}
+```
+
+Example request:
+
+```json
+{
+  "title": "Porosity vs Vp review",
+  "analysis_type": "crossplot",
+  "configuration": {
+    "x_field": "porosity_percent",
+    "y_field": "vp_m_s",
+    "color_by": "rock_type",
+    "filters": {
+      "wells": ["1-RJS-628"]
+    }
+  },
+  "comments": [
+    {
+      "author": "petrophysics",
+      "text": "Review high-porosity samples."
+    }
+  ],
+  "selected_models": ["gassmann-critical-porosity"],
+  "result": {
+    "indicators": {
+      "sample_count": 2
+    }
+  }
+}
+```
+
 ### Gassmann Rock Physics Model
 
 ```http
@@ -504,9 +546,9 @@ or `AVO`.
 
 ## Next Recommended Steps
 
-1. Add saved-analysis entities for filters, comments, selected models, and results.
-2. Add crossplot indicators: Pearson correlation and MAE.
-3. Add PNG export support later when frontend chart rendering exists.
-4. Resolve the RockPhyPy/Matplotlib compatibility issue.
-5. Add `softsand` and `AVO` model endpoints.
-6. Add local Docker Compose for PostgreSQL and MLflow.
+1. Replace saved-analysis in-memory persistence with PostgreSQL-backed persistence.
+2. Add local Docker Compose for PostgreSQL and MLflow.
+3. Add MAE when model/reference prediction series are available.
+4. Add PNG export support later when frontend chart rendering exists.
+5. Resolve the RockPhyPy/Matplotlib compatibility issue.
+6. Add `softsand` and `AVO` model endpoints.
