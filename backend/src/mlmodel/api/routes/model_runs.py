@@ -72,7 +72,13 @@ def _create_model_run_with_optional_mlflow(
     model_run: ModelRunCreate,
     service: ModelRunService,
 ) -> ModelRun:
-    mlflow_run_id = log_model_run_to_mlflow(get_settings(), model_run)
+    try:
+        mlflow_run_id = log_model_run_to_mlflow(get_settings(), model_run)
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
     if mlflow_run_id:
         model_run = model_run.model_copy(update={"mlflow_run_id": mlflow_run_id})
     return service.create_model_run(model_run)

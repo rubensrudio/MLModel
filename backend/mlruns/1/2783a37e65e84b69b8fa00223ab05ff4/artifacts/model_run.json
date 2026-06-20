@@ -1,0 +1,40 @@
+{
+  "model_name": "rockphypy.gassmann",
+  "model_version": null,
+  "engine": "local-gassmann-fallback",
+  "parameters": {
+    "mineral_bulk_modulus_gpa": 37.0,
+    "mineral_shear_modulus_gpa": 44.0,
+    "mineral_density_g_cm3": 2.65,
+    "fluid_bulk_modulus_gpa": 2.2,
+    "fluid_density_g_cm3": 1.0,
+    "porosity_fraction": 0.2,
+    "critical_porosity_fraction": 0.4
+  },
+  "result": {
+    "dry_bulk_modulus_gpa": 18.5,
+    "dry_shear_modulus_gpa": 22.0,
+    "saturated_bulk_modulus_gpa": 21.024813895781637,
+    "saturated_shear_modulus_gpa": 22.0,
+    "bulk_density_g_cm3": 2.3200000000000003,
+    "vp_m_s": 4658.980354496468,
+    "vs_m_s": 3079.4088102571986,
+    "acoustic_impedance": 10808.834422431806,
+    "vp_vs_ratio": 1.5129463613203535,
+    "engine": "local-gassmann-fallback",
+    "assumptions": [
+      "Critical porosity model for dry frame",
+      "Gassmann low-frequency fluid substitution",
+      "Connected pore space and isotropic homogeneous rock",
+      "Elastic moduli in GPa and density in g/cm3"
+    ]
+  },
+  "assumptions": [
+    "Critical porosity model for dry frame",
+    "Gassmann low-frequency fluid substitution",
+    "Connected pore space and isotropic homogeneous rock",
+    "Elastic moduli in GPa and density in g/cm3"
+  ],
+  "saved_analysis_id": null,
+  "mlflow_run_id": null
+}

@@ -60,6 +60,33 @@ def test_create_model_run_persists_mlflow_run_id_when_logged(
     assert response.json()["mlflow_run_id"] == "mlflow-run-123"
 
 
+def test_create_model_run_returns_503_when_mlflow_logging_fails(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    _force_local_repository(monkeypatch)
+
+    def fail_mlflow_logging(settings, model_run):
+        raise RuntimeError("MLflow logging requires mlflow.")
+
+    monkeypatch.setattr(
+        "mlmodel.api.routes.model_runs.log_model_run_to_mlflow",
+        fail_mlflow_logging,
+    )
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/model-runs",
+        json={
+            "model_name": "rockphypy.gassmann",
+            "parameters": {"porosity_fraction": 0.2},
+            "result": {"vp_m_s": 4659.0},
+        },
+    )
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "MLflow logging requires mlflow."
+
+
 def test_get_model_run_by_id(monkeypatch: MonkeyPatch) -> None:
     _force_local_repository(monkeypatch)
     client = TestClient(create_app())
