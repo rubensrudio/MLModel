@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mlmodel-postgres
+    environment:
+      POSTGRES_DB: mlmodel
+      POSTGRES_USER: mlmodel
+      POSTGRES_PASSWORD: mlmodel
+    ports:
+      - "5432:5432"
+    volumes:
+      - mlmodel-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mlmodel -d mlmodel"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mlmodel-postgres-data:

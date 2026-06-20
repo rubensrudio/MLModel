@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from mlmodel.repositories.analysis_repository import AnalysisRepository
-from mlmodel.repositories.local_analysis_repository import LocalAnalysisRepository
+from mlmodel.core.config import get_settings
+from mlmodel.repositories.analysis_repository_factory import create_analysis_repository
 from mlmodel.schemas.analyses import SavedAnalysis, SavedAnalysisCreate
 from mlmodel.services.analysis_service import AnalysisService
 
@@ -9,8 +9,7 @@ router = APIRouter(prefix="/analyses", tags=["analyses"])
 
 
 def get_analysis_service() -> AnalysisService:
-    repository: AnalysisRepository = LocalAnalysisRepository()
-    return AnalysisService(repository)
+    return AnalysisService(create_analysis_repository(get_settings()))
 
 
 @router.post("", response_model=SavedAnalysis, status_code=status.HTTP_201_CREATED)

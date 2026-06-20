@@ -442,8 +442,8 @@ analysis.
 ## Saved Analysis Endpoints
 
 Saved analyses persist analysis configuration and optional result snapshots for later retrieval.
-The current implementation uses local in-memory persistence behind a repository interface. It is
-intended as the API contract before PostgreSQL is introduced.
+The default implementation uses local in-memory persistence behind a repository interface. PostgreSQL
+can be enabled through environment variables for local persistence testing.
 
 ```http
 POST /api/analyses
@@ -479,6 +479,59 @@ Example request:
   }
 }
 ```
+
+### PostgreSQL Persistence for Saved Analyses
+
+By default, saved analyses use PostgreSQL automatically when the `POSTGRESQL_*` environment variables
+are available. Without those variables, the API falls back to in-memory persistence.
+
+Expected PostgreSQL environment variables:
+
+```powershell
+$env:POSTGRESQL_HOST = "localhost"
+$env:POSTGRESQL_PORT = "5432"
+$env:POSTGRESQL_USER = "mlmodel"
+$env:POSTGRESQL_PASSWORD = "mlmodel"
+
+cd ..\backend
+uvicorn mlmodel.main:app --reload
+```
+
+`MLMODEL_DATABASE_URL` can still be used as a full connection string override.
+`MLMODEL_POSTGRESQL_DATABASE` can be used to override the default database name, which is `mlmodel`.
+`MLMODEL_ANALYSIS_REPOSITORY_BACKEND=local` can be used to force in-memory persistence even when
+PostgreSQL variables are present.
+
+The backend creates the `saved_analyses` table automatically during API startup when PostgreSQL is
+selected.
+
+To confirm what the backend selected, call:
+
+```http
+GET /health/persistence
+```
+
+Expected PostgreSQL response includes:
+
+```json
+{
+  "backend": "postgres",
+  "postgresql_database": "mlmodel",
+  "postgresql_schema": "public",
+  "table_name": "saved_analyses",
+  "table_exists": true
+}
+```
+
+If you inspect the database manually, check the schema explicitly:
+
+```sql
+select table_schema, table_name
+from information_schema.tables
+where table_name = 'saved_analyses';
+```
+
+Use `MLMODEL_POSTGRESQL_SCHEMA` if the table must be created outside `public`.
 
 ### Gassmann Rock Physics Model
 
@@ -546,8 +599,8 @@ or `AVO`.
 
 ## Next Recommended Steps
 
-1. Replace saved-analysis in-memory persistence with PostgreSQL-backed persistence.
-2. Add local Docker Compose for PostgreSQL and MLflow.
+1. Add model-run persistence and connect saved analyses to model runs.
+2. Add MLflow Tracking Server and client integration.
 3. Add MAE when model/reference prediction series are available.
 4. Add PNG export support later when frontend chart rendering exists.
 5. Resolve the RockPhyPy/Matplotlib compatibility issue.
