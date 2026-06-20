@@ -27,6 +27,9 @@ def test_crossplot_returns_points_for_selected_axes() -> None:
         "y": 4339.0,
         "color": "Boundstone",
     }
+    assert payload["indicators"]["sample_count"] == 6
+    assert round(payload["indicators"]["pearson_correlation"], 3) == 0.236
+    assert payload["indicators"]["mean_absolute_error"] is None
 
 
 def test_crossplot_applies_filters() -> None:
@@ -47,6 +50,11 @@ def test_crossplot_applies_filters() -> None:
     assert response.status_code == 200
     payload = response.json()
     assert [point["sample_code"] for point in payload["points"]] == ["G2441V"]
+    assert payload["indicators"] == {
+        "sample_count": 1,
+        "pearson_correlation": None,
+        "mean_absolute_error": None,
+    }
 
 
 def test_crossplot_rejects_unknown_numeric_field() -> None:

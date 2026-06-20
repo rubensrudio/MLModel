@@ -33,11 +33,18 @@ class CrossplotPoint(BaseModel):
     color: str | None = None
 
 
+class CrossplotIndicators(BaseModel):
+    sample_count: int = Field(ge=0)
+    pearson_correlation: float | None = None
+    mean_absolute_error: float | None = None
+
+
 class CrossplotResponse(BaseModel):
     x_field: NumericSampleField
     y_field: NumericSampleField
     color_by: CategorySampleField | None
     points: list[CrossplotPoint]
+    indicators: CrossplotIndicators
 
 
 class AnalyticsStats(BaseModel):

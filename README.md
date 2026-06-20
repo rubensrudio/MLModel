@@ -20,6 +20,7 @@ Implemented so far:
 - Histogram analytics endpoint with optional grouping and indicator stats
 - Boxplot analytics endpoint with optional grouping and indicator stats
 - JSON/CSV exports for filtered samples and analytics results
+- Crossplot indicators with sample count and Pearson correlation
 - First rock physics endpoint for a critical-porosity + Gassmann workflow
 - Automated tests for every implemented increment
 - Ruff lint configuration
@@ -309,6 +310,15 @@ Supported category fields:
 - `lithology_micro`
 
 The response returns chart-ready points for a frontend charting library such as eCharts.
+
+The response also includes `indicators`:
+
+- `sample_count`
+- `pearson_correlation`
+- `mean_absolute_error`
+
+`mean_absolute_error` is currently `null` because MAE requires a model or reference prediction
+series. It should be populated when crossplot/model comparison is implemented.
 
 ### Histogram Analytics
 

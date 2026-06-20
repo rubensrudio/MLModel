@@ -6,6 +6,7 @@ from mlmodel.schemas.analytics import (
     BoxplotRequest,
     BoxplotResponse,
     BoxplotSeries,
+    CrossplotIndicators,
     CrossplotPoint,
     CrossplotRequest,
     CrossplotResponse,
@@ -24,19 +25,21 @@ class AnalyticsService:
 
     def create_crossplot(self, request: CrossplotRequest) -> CrossplotResponse:
         samples = filter_samples(self._repository.list_samples(), request.filters)
+        points = [
+            CrossplotPoint(
+                sample_code=sample.sample_code,
+                x=_numeric_value(sample, request.x_field),
+                y=_numeric_value(sample, request.y_field),
+                color=_category_value(sample, request.color_by) if request.color_by else None,
+            )
+            for sample in samples
+        ]
         return CrossplotResponse(
             x_field=request.x_field,
             y_field=request.y_field,
             color_by=request.color_by,
-            points=[
-                CrossplotPoint(
-                    sample_code=sample.sample_code,
-                    x=_numeric_value(sample, request.x_field),
-                    y=_numeric_value(sample, request.y_field),
-                    color=_category_value(sample, request.color_by) if request.color_by else None,
-                )
-                for sample in samples
-            ],
+            points=points,
+            indicators=_crossplot_indicators(points),
         )
 
     def create_histogram(self, request: HistogramRequest) -> HistogramResponse:
@@ -106,6 +109,37 @@ def _numeric_value(sample: Sample, field: str) -> float:
 
 def _category_value(sample: Sample, field: str) -> str:
     return str(getattr(sample, field))
+
+
+def _crossplot_indicators(points: list[CrossplotPoint]) -> CrossplotIndicators:
+    return CrossplotIndicators(
+        sample_count=len(points),
+        pearson_correlation=_pearson_correlation(
+            [point.x for point in points],
+            [point.y for point in points],
+        ),
+        mean_absolute_error=None,
+    )
+
+
+def _pearson_correlation(x_values: list[float], y_values: list[float]) -> float | None:
+    if len(x_values) < 2:
+        return None
+
+    x_mean = fmean(x_values)
+    y_mean = fmean(y_values)
+    x_deltas = [value - x_mean for value in x_values]
+    y_deltas = [value - y_mean for value in y_values]
+    x_sum_squares = sum(delta**2 for delta in x_deltas)
+    y_sum_squares = sum(delta**2 for delta in y_deltas)
+
+    if x_sum_squares == 0 or y_sum_squares == 0:
+        return None
+
+    covariance = sum(
+        x_delta * y_delta for x_delta, y_delta in zip(x_deltas, y_deltas, strict=True)
+    )
+    return covariance / (x_sum_squares * y_sum_squares) ** 0.5
 
 
 def _boxplot_series(group: str | None, values: list[float]) -> BoxplotSeries:

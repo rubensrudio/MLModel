@@ -66,6 +66,11 @@ def test_export_crossplot_json_returns_filtered_analytics_payload() -> None:
     payload = response.json()
     assert len(payload["points"]) == 1
     assert payload["points"][0]["sample_code"] == "G2441V"
+    assert payload["indicators"] == {
+        "sample_count": 1,
+        "pearson_correlation": None,
+        "mean_absolute_error": None,
+    }
 
 
 def test_export_crossplot_csv_returns_chart_points() -> None:
