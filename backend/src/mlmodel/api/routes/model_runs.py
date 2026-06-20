@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from mlmodel.core.config import get_settings
+from mlmodel.integrations.mlflow_client import log_model_run_to_mlflow
 from mlmodel.repositories.model_run_repository_factory import create_model_run_repository
 from mlmodel.schemas.model_runs import GassmannModelRunRequest, ModelRun, ModelRunCreate
 from mlmodel.services.model_run_service import ModelRunService
@@ -18,7 +19,7 @@ def create_model_run(
     request: ModelRunCreate,
     service: ModelRunService = Depends(get_model_run_service),
 ) -> ModelRun:
-    return service.create_model_run(request)
+    return _create_model_run_with_optional_mlflow(request, service)
 
 
 @router.get("", response_model=list[ModelRun])
@@ -53,7 +54,7 @@ def run_and_save_gassmann(
     service: ModelRunService = Depends(get_model_run_service),
 ) -> ModelRun:
     result = RockPhysicsService().run_gassmann(request.parameters)
-    return service.create_model_run(
+    return _create_model_run_with_optional_mlflow(
         ModelRunCreate(
             model_name="rockphypy.gassmann",
             model_version=None,
@@ -62,5 +63,16 @@ def run_and_save_gassmann(
             result=result.model_dump(mode="json"),
             assumptions=result.assumptions,
             saved_analysis_id=request.saved_analysis_id,
-        )
+        ),
+        service,
     )
+
+
+def _create_model_run_with_optional_mlflow(
+    model_run: ModelRunCreate,
+    service: ModelRunService,
+) -> ModelRun:
+    mlflow_run_id = log_model_run_to_mlflow(get_settings(), model_run)
+    if mlflow_run_id:
+        model_run = model_run.model_copy(update={"mlflow_run_id": mlflow_run_id})
+    return service.create_model_run(model_run)

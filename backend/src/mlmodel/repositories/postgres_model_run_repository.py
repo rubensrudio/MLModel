@@ -31,6 +31,7 @@ class PostgresModelRunRepository(ModelRunRepository):
                     result,
                     assumptions,
                     saved_analysis_id,
+                    mlflow_run_id,
                     created_at
                 )
                 VALUES (
@@ -42,6 +43,7 @@ class PostgresModelRunRepository(ModelRunRepository):
                     %(result)s,
                     %(assumptions)s,
                     %(saved_analysis_id)s,
+                    %(mlflow_run_id)s,
                     %(created_at)s
                 )
                 """,
@@ -54,6 +56,7 @@ class PostgresModelRunRepository(ModelRunRepository):
                     "result": _json(payload["result"]),
                     "assumptions": _json(payload["assumptions"]),
                     "saved_analysis_id": payload["saved_analysis_id"],
+                    "mlflow_run_id": payload["mlflow_run_id"],
                     "created_at": now,
                 },
             )
@@ -78,6 +81,7 @@ class PostgresModelRunRepository(ModelRunRepository):
                         result,
                         assumptions,
                         saved_analysis_id,
+                        mlflow_run_id,
                         created_at
                     FROM {self._table_name}
                     ORDER BY created_at ASC, run_id ASC
@@ -95,6 +99,7 @@ class PostgresModelRunRepository(ModelRunRepository):
                         result,
                         assumptions,
                         saved_analysis_id,
+                        mlflow_run_id,
                         created_at
                     FROM {self._table_name}
                     WHERE saved_analysis_id = %(saved_analysis_id)s
@@ -117,6 +122,7 @@ class PostgresModelRunRepository(ModelRunRepository):
                     result,
                     assumptions,
                     saved_analysis_id,
+                    mlflow_run_id,
                     created_at
                 FROM {self._table_name}
                 WHERE run_id = %(run_id)s
@@ -140,8 +146,15 @@ class PostgresModelRunRepository(ModelRunRepository):
                     result JSONB NOT NULL,
                     assumptions JSONB NOT NULL DEFAULT '[]'::jsonb,
                     saved_analysis_id TEXT,
+                    mlflow_run_id TEXT,
                     created_at TIMESTAMPTZ NOT NULL
                 )
+                """
+            )
+            connection.execute(
+                f"""
+                ALTER TABLE {self._table_name}
+                ADD COLUMN IF NOT EXISTS mlflow_run_id TEXT
                 """
             )
             connection.commit()
@@ -183,5 +196,6 @@ def _row_to_model_run(row: dict[str, Any]) -> ModelRun:
         result=row["result"],
         assumptions=row["assumptions"],
         saved_analysis_id=row["saved_analysis_id"],
+        mlflow_run_id=row["mlflow_run_id"],
         created_at=row["created_at"],
     )

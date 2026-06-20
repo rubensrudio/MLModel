@@ -7,6 +7,7 @@ from mlmodel.main import create_app
 
 def _force_local_repository(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setenv("MLMODEL_ANALYSIS_REPOSITORY_BACKEND", "local")
+    monkeypatch.delenv("MLMODEL_MLFLOW_TRACKING_URI", raising=False)
     get_settings.cache_clear()
 
 
@@ -33,6 +34,30 @@ def test_create_model_run(monkeypatch: MonkeyPatch) -> None:
     assert payload["parameters"]["porosity_fraction"] == 0.2
     assert payload["result"]["vp_m_s"] == 4659.0
     assert payload["saved_analysis_id"] is None
+    assert payload["mlflow_run_id"] is None
+
+
+def test_create_model_run_persists_mlflow_run_id_when_logged(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    _force_local_repository(monkeypatch)
+    monkeypatch.setattr(
+        "mlmodel.api.routes.model_runs.log_model_run_to_mlflow",
+        lambda settings, model_run: "mlflow-run-123",
+    )
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/model-runs",
+        json={
+            "model_name": "rockphypy.gassmann",
+            "parameters": {"porosity_fraction": 0.2},
+            "result": {"vp_m_s": 4659.0},
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["mlflow_run_id"] == "mlflow-run-123"
 
 
 def test_get_model_run_by_id(monkeypatch: MonkeyPatch) -> None:

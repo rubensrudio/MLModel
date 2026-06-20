@@ -23,6 +23,7 @@ Implemented so far:
 - Crossplot indicators with sample count and Pearson correlation
 - Saved-analysis API with local in-memory persistence
 - Model-run API with optional saved-analysis linkage
+- Optional MLflow logging for model runs
 - First rock physics endpoint for a critical-porosity + Gassmann workflow
 - Automated tests for every implemented increment
 - Ruff lint configuration
@@ -585,6 +586,22 @@ Example Gassmann run with persistence:
 }
 ```
 
+### Optional MLflow Logging
+
+Model runs are logged to MLflow only when `MLMODEL_MLFLOW_TRACKING_URI` is configured:
+
+```powershell
+$env:MLMODEL_MLFLOW_TRACKING_URI = "http://127.0.0.1:5000"
+$env:MLMODEL_MLFLOW_EXPERIMENT_NAME = "MLModel Rock Physics"
+```
+
+When enabled, the backend logs:
+
+- model run parameters as MLflow params;
+- numeric result fields as MLflow metrics;
+- the full model run payload as `model_run.json`;
+- the returned `mlflow_run_id` in the persisted `ModelRun`.
+
 ### Gassmann Rock Physics Model
 
 ```http
@@ -651,7 +668,7 @@ or `AVO`.
 
 ## Next Recommended Steps
 
-1. Add MLflow Tracking Server and client integration for model runs.
+1. Add MLflow server/runtime validation workflow.
 2. Add MAE when model/reference prediction series are available.
 3. Add PNG export support later when frontend chart rendering exists.
 4. Resolve the RockPhyPy/Matplotlib compatibility issue.

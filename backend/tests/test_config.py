@@ -24,8 +24,23 @@ def test_settings_default_to_local_analysis_repository(monkeypatch: MonkeyPatch)
 
     assert settings.analysis_repository_backend == "auto"
     assert settings.database_url is None
+    assert settings.mlflow_tracking_uri is None
+    assert settings.mlflow_experiment_name == "MLModel Rock Physics"
     assert settings.resolved_database_url is None
     assert settings.should_use_postgres_for_analyses is False
+
+
+def test_settings_accept_mlflow_configuration(monkeypatch: MonkeyPatch) -> None:
+    for key in POSTGRES_ENV_KEYS:
+        monkeypatch.delenv(key, raising=False)
+
+    settings = Settings(
+        mlflow_tracking_uri="http://localhost:5000",
+        mlflow_experiment_name="Rock Physics QA",
+    )
+
+    assert settings.mlflow_tracking_uri == "http://localhost:5000"
+    assert settings.mlflow_experiment_name == "Rock Physics QA"
 
 
 def test_settings_accept_postgres_analysis_repository(monkeypatch: MonkeyPatch) -> None:

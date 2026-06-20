@@ -16,6 +16,7 @@ class ModelRunCreate(BaseModel):
     result: dict[str, Any]
     assumptions: list[str] = Field(default_factory=list)
     saved_analysis_id: str | None = None
+    mlflow_run_id: str | None = None
 
 
 class ModelRun(ModelRunCreate):

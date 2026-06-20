@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     postgresql_password: str | None = Field(default=None, validation_alias="POSTGRESQL_PASSWORD")
     postgresql_database: str = "mlmodel"
     postgresql_schema: str = "public"
+    mlflow_tracking_uri: str | None = None
+    mlflow_experiment_name: str = "MLModel Rock Physics"
 
     model_config = SettingsConfigDict(
         env_file=".env",
