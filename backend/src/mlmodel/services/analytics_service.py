@@ -6,6 +6,9 @@ from mlmodel.schemas.analytics import (
     BoxplotRequest,
     BoxplotResponse,
     BoxplotSeries,
+    CrossplotComparisonPoint,
+    CrossplotComparisonRequest,
+    CrossplotComparisonResponse,
     CrossplotIndicators,
     CrossplotPoint,
     CrossplotRequest,
@@ -35,6 +38,25 @@ class AnalyticsService:
             for sample in samples
         ]
         return CrossplotResponse(
+            x_field=request.x_field,
+            y_field=request.y_field,
+            color_by=request.color_by,
+            points=points,
+            indicators=_crossplot_indicators(points),
+        )
+
+    def compare_crossplot(self, request: CrossplotComparisonRequest) -> CrossplotComparisonResponse:
+        samples = filter_samples(self._repository.list_samples(), request.filters)
+        predictions_by_sample = {
+            prediction.sample_code: prediction.predicted_y
+            for prediction in request.predictions
+        }
+        points = [
+            _comparison_point(sample, request, predictions_by_sample[sample.sample_code])
+            for sample in samples
+            if sample.sample_code in predictions_by_sample
+        ]
+        return CrossplotComparisonResponse(
             x_field=request.x_field,
             y_field=request.y_field,
             color_by=request.color_by,
@@ -111,14 +133,37 @@ def _category_value(sample: Sample, field: str) -> str:
     return str(getattr(sample, field))
 
 
-def _crossplot_indicators(points: list[CrossplotPoint]) -> CrossplotIndicators:
+def _comparison_point(
+    sample: Sample,
+    request: CrossplotComparisonRequest,
+    predicted_y: float,
+) -> CrossplotComparisonPoint:
+    actual_y = _numeric_value(sample, request.y_field)
+    return CrossplotComparisonPoint(
+        sample_code=sample.sample_code,
+        x=_numeric_value(sample, request.x_field),
+        y=actual_y,
+        color=_category_value(sample, request.color_by) if request.color_by else None,
+        predicted_y=predicted_y,
+        absolute_error=abs(actual_y - predicted_y),
+    )
+
+
+def _crossplot_indicators(
+    points: list[CrossplotPoint] | list[CrossplotComparisonPoint],
+) -> CrossplotIndicators:
+    absolute_errors = [
+        point.absolute_error
+        for point in points
+        if isinstance(point, CrossplotComparisonPoint)
+    ]
     return CrossplotIndicators(
         sample_count=len(points),
         pearson_correlation=_pearson_correlation(
             [point.x for point in points],
             [point.y for point in points],
         ),
-        mean_absolute_error=None,
+        mean_absolute_error=fmean(absolute_errors) if absolute_errors else None,
     )
 
 

@@ -71,6 +71,89 @@ def test_crossplot_rejects_unknown_numeric_field() -> None:
     assert response.status_code == 422
 
 
+def test_crossplot_compare_returns_prediction_errors_and_mae() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/analytics/crossplot/compare",
+        json={
+            "x_field": "porosity_percent",
+            "y_field": "vp_m_s",
+            "color_by": "rock_type",
+            "predictions": [
+                {"sample_code": "F244V", "predicted_y": 4300.0},
+                {"sample_code": "G2441V", "predicted_y": 4200.0},
+            ],
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["x_field"] == "porosity_percent"
+    assert payload["y_field"] == "vp_m_s"
+    assert payload["color_by"] == "rock_type"
+    assert len(payload["points"]) == 2
+    assert payload["points"][0] == {
+        "sample_code": "F244V",
+        "x": 19.2,
+        "y": 4339.0,
+        "color": "Boundstone",
+        "predicted_y": 4300.0,
+        "absolute_error": 39.0,
+    }
+    assert payload["points"][1]["absolute_error"] == 91.0
+    assert payload["indicators"]["sample_count"] == 2
+    assert payload["indicators"]["mean_absolute_error"] == 65.0
+
+
+def test_crossplot_compare_applies_filters_before_matching_predictions() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/analytics/crossplot/compare",
+        json={
+            "x_field": "porosity_percent",
+            "y_field": "vp_m_s",
+            "filters": {
+                "sample_codes": ["G2441V"],
+            },
+            "predictions": [
+                {"sample_code": "F244V", "predicted_y": 4300.0},
+                {"sample_code": "G2441V", "predicted_y": 4200.0},
+            ],
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert [point["sample_code"] for point in payload["points"]] == ["G2441V"]
+    assert payload["indicators"]["mean_absolute_error"] == 91.0
+
+
+def test_crossplot_compare_returns_empty_result_when_no_predictions_match() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/analytics/crossplot/compare",
+        json={
+            "x_field": "porosity_percent",
+            "y_field": "vp_m_s",
+            "predictions": [
+                {"sample_code": "UNKNOWN", "predicted_y": 4200.0},
+            ],
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["points"] == []
+    assert payload["indicators"] == {
+        "sample_count": 0,
+        "pearson_correlation": None,
+        "mean_absolute_error": None,
+    }
+
+
 def test_histogram_returns_counted_bins_for_selected_field() -> None:
     client = TestClient(create_app())
 

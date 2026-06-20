@@ -5,6 +5,8 @@ from mlmodel.repositories.sample_repository import SampleRepository
 from mlmodel.schemas.analytics import (
     BoxplotRequest,
     BoxplotResponse,
+    CrossplotComparisonRequest,
+    CrossplotComparisonResponse,
     CrossplotRequest,
     CrossplotResponse,
     HistogramRequest,
@@ -26,6 +28,14 @@ def create_crossplot(
     service: AnalyticsService = Depends(get_analytics_service),
 ) -> CrossplotResponse:
     return service.create_crossplot(request)
+
+
+@router.post("/crossplot/compare", response_model=CrossplotComparisonResponse)
+def compare_crossplot(
+    request: CrossplotComparisonRequest,
+    service: AnalyticsService = Depends(get_analytics_service),
+) -> CrossplotComparisonResponse:
+    return service.compare_crossplot(request)
 
 
 @router.post("/histogram", response_model=HistogramResponse)

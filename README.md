@@ -3,7 +3,8 @@
 MLModel is the initial backend foundation for a WebLab Petrophysics application.
 
 The current implementation focuses on a tested Python API for petrophysical sample exploration,
-basic analytics, unit conversions, and the first rock physics model endpoint.
+basic analytics, unit conversions, persisted saved analyses, persisted model runs, and optional
+MLflow tracking.
 
 ## Current Status
 
@@ -24,6 +25,7 @@ Implemented so far:
 - Saved-analysis API with local in-memory persistence
 - Model-run API with optional saved-analysis linkage
 - Optional MLflow logging for model runs
+- PostgreSQL persistence for saved analyses and model runs
 - First rock physics endpoint for a critical-porosity + Gassmann workflow
 - Automated tests for every implemented increment
 - Ruff lint configuration
@@ -31,8 +33,6 @@ Implemented so far:
 Not implemented yet:
 
 - Frontend application
-- PostgreSQL persistence
-- MLflow Tracking Server integration
 - DSIS/DSIF corporate data integration
 - Authentication and authorization
 - Production deployment configuration
@@ -135,7 +135,7 @@ python -m pytest
 Current expected result:
 
 ```text
-34 passed
+55 passed
 ```
 
 ## Run Lint
@@ -171,6 +171,90 @@ OpenAPI documentation:
 ```text
 http://127.0.0.1:8000/docs
 ```
+
+## Validated Local Runtime Flow
+
+The following workflow was validated on 2026-06-20.
+
+### PostgreSQL
+
+The backend reads these environment variables from the shell running `uvicorn`:
+
+```powershell
+$env:POSTGRESQL_HOST = "<host>"
+$env:POSTGRESQL_PORT = "<port>"
+$env:POSTGRESQL_USER = "<user>"
+$env:POSTGRESQL_PASSWORD = "<password>"
+```
+
+The backend ignores global `POSTGRESQL_DATABASE` and uses `mlmodel` by default. Use
+`MLMODEL_POSTGRESQL_DATABASE` only if the project database name must differ from `mlmodel`.
+
+Check runtime persistence selection:
+
+```http
+GET /health/persistence
+```
+
+Expected PostgreSQL fields:
+
+```json
+{
+  "backend": "postgres",
+  "postgresql_database": "mlmodel",
+  "postgresql_schema": "public",
+  "table_exists": true,
+  "current_database": "mlmodel"
+}
+```
+
+Expected tables:
+
+```sql
+select table_schema, table_name
+from information_schema.tables
+where table_name in ('saved_analyses', 'model_runs')
+order by table_name;
+```
+
+### MLflow
+
+Install dependencies inside the backend virtual environment:
+
+```powershell
+cd D:\Sistemas\MLModel\backend
+.\.venv\Scripts\Activate.ps1
+python -m pip install -e .
+```
+
+Start MLflow in a separate shell:
+
+```powershell
+mlflow server `
+  --backend-store-uri sqlite:///mlflow.db `
+  --default-artifact-root ./mlruns `
+  --host 127.0.0.1 `
+  --port 5000
+```
+
+Start the backend with MLflow enabled:
+
+```powershell
+$env:MLMODEL_MLFLOW_TRACKING_URI = "http://127.0.0.1:5000"
+$env:MLMODEL_MLFLOW_EXPERIMENT_NAME = "MLModel Rock Physics"
+
+uvicorn mlmodel.main:app --reload
+```
+
+Validate by calling:
+
+```http
+POST /api/model-runs/rockphypy/gassmann
+```
+
+The returned payload should include `mlflow_run_id`, the row in `public.model_runs` should persist
+that id, and the MLflow UI at `http://127.0.0.1:5000` should show params, metrics, and the
+`model_run.json` artifact.
 
 ## Implemented Endpoints
 
@@ -282,6 +366,7 @@ Unknown samples return:
 
 ```http
 POST /api/analytics/crossplot
+POST /api/analytics/crossplot/compare
 ```
 
 Example request:
@@ -322,6 +407,26 @@ The response also includes `indicators`:
 
 `mean_absolute_error` is currently `null` because MAE requires a model or reference prediction
 series. It should be populated when crossplot/model comparison is implemented.
+
+Use `POST /api/analytics/crossplot/compare` when model/reference predictions are available per
+sample. The endpoint matches predictions by `sample_code` and returns `predicted_y`,
+`absolute_error`, and `indicators.mean_absolute_error`.
+
+Example comparison request:
+
+```json
+{
+  "x_field": "porosity_percent",
+  "y_field": "vp_m_s",
+  "color_by": "rock_type",
+  "predictions": [
+    {
+      "sample_code": "F244V",
+      "predicted_y": 4300.0
+    }
+  ]
+}
+```
 
 ### Histogram Analytics
 
@@ -668,8 +773,7 @@ or `AVO`.
 
 ## Next Recommended Steps
 
-1. Add MLflow server/runtime validation workflow.
-2. Add MAE when model/reference prediction series are available.
-3. Add PNG export support later when frontend chart rendering exists.
-4. Resolve the RockPhyPy/Matplotlib compatibility issue.
-5. Add `softsand` and `AVO` model endpoints.
+1. Add PNG export support later when frontend chart rendering exists.
+2. Resolve the RockPhyPy/Matplotlib compatibility issue.
+3. Add `softsand` and `AVO` model endpoints.
+4. Start frontend only after the model-run/analytics contracts are stable.

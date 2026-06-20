@@ -47,6 +47,28 @@ class CrossplotResponse(BaseModel):
     indicators: CrossplotIndicators
 
 
+class CrossplotPrediction(BaseModel):
+    sample_code: str
+    predicted_y: float
+
+
+class CrossplotComparisonRequest(CrossplotRequest):
+    predictions: list[CrossplotPrediction] = Field(min_length=1)
+
+
+class CrossplotComparisonPoint(CrossplotPoint):
+    predicted_y: float
+    absolute_error: float
+
+
+class CrossplotComparisonResponse(BaseModel):
+    x_field: NumericSampleField
+    y_field: NumericSampleField
+    color_by: CategorySampleField | None
+    points: list[CrossplotComparisonPoint]
+    indicators: CrossplotIndicators
+
+
 class AnalyticsStats(BaseModel):
     count: int = Field(ge=0)
     mean: float
