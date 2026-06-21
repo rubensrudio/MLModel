@@ -130,6 +130,183 @@
       </article>
     </section>
 
+    <section class="model-workbench">
+      <article class="panel model-panel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Rock Physics</p>
+            <h2>Executar modelo</h2>
+          </div>
+          <select class="model-select" [(ngModel)]="selectedModel">
+            <option *ngFor="let option of modelOptions" [value]="option.key">{{ option.label }}</option>
+          </select>
+        </div>
+
+        <div class="parameter-grid" *ngIf="selectedModel === 'gassmann'">
+          <label>
+            <span>K mineral GPa</span>
+            <input type="number" [(ngModel)]="gassmannForm.mineral_bulk_modulus_gpa">
+          </label>
+          <label>
+            <span>G mineral GPa</span>
+            <input type="number" [(ngModel)]="gassmannForm.mineral_shear_modulus_gpa">
+          </label>
+          <label>
+            <span>Dens. mineral g/cm3</span>
+            <input type="number" [(ngModel)]="gassmannForm.mineral_density_g_cm3">
+          </label>
+          <label>
+            <span>K fluido GPa</span>
+            <input type="number" [(ngModel)]="gassmannForm.fluid_bulk_modulus_gpa">
+          </label>
+          <label>
+            <span>Dens. fluido g/cm3</span>
+            <input type="number" [(ngModel)]="gassmannForm.fluid_density_g_cm3">
+          </label>
+          <label>
+            <span>Porosidade</span>
+            <input type="number" step="0.01" [(ngModel)]="gassmannForm.porosity_fraction">
+          </label>
+          <label>
+            <span>Porosidade critica</span>
+            <input type="number" step="0.01" [(ngModel)]="gassmannForm.critical_porosity_fraction">
+          </label>
+        </div>
+
+        <div class="parameter-grid" *ngIf="selectedModel === 'softsand' || selectedModel === 'stiffsand'">
+          <label>
+            <span>K mineral GPa</span>
+            <input type="number" [(ngModel)]="granularForm.mineral_bulk_modulus_gpa">
+          </label>
+          <label>
+            <span>G mineral GPa</span>
+            <input type="number" [(ngModel)]="granularForm.mineral_shear_modulus_gpa">
+          </label>
+          <label>
+            <span>Porosidade</span>
+            <input type="number" step="0.01" [(ngModel)]="granularForm.porosity_fraction">
+          </label>
+          <label>
+            <span>Porosidade critica</span>
+            <input type="number" step="0.01" [(ngModel)]="granularForm.critical_porosity_fraction">
+          </label>
+          <label>
+            <span>Coordenacao</span>
+            <input type="number" step="0.1" [(ngModel)]="granularForm.coordination_number">
+          </label>
+          <label>
+            <span>Stress MPa</span>
+            <input type="number" [(ngModel)]="granularForm.effective_stress_mpa">
+          </label>
+          <label>
+            <span>Shear factor</span>
+            <input type="number" step="0.1" [(ngModel)]="granularForm.reduced_shear_factor">
+          </label>
+        </div>
+
+        <div class="parameter-grid" *ngIf="selectedModel === 'avo.aki-richards'">
+          <label class="wide-field">
+            <span>Angulos graus</span>
+            <input type="text" [(ngModel)]="avoForm.incident_angles_degrees">
+          </label>
+          <label>
+            <span>Vp superior</span>
+            <input type="number" [(ngModel)]="avoForm.vp_upper_m_s">
+          </label>
+          <label>
+            <span>Vp inferior</span>
+            <input type="number" [(ngModel)]="avoForm.vp_lower_m_s">
+          </label>
+          <label>
+            <span>Vs superior</span>
+            <input type="number" [(ngModel)]="avoForm.vs_upper_m_s">
+          </label>
+          <label>
+            <span>Vs inferior</span>
+            <input type="number" [(ngModel)]="avoForm.vs_lower_m_s">
+          </label>
+          <label>
+            <span>Dens. superior kg/m3</span>
+            <input type="number" [(ngModel)]="avoForm.density_upper_kg_m3">
+          </label>
+          <label>
+            <span>Dens. inferior kg/m3</span>
+            <input type="number" [(ngModel)]="avoForm.density_lower_kg_m3">
+          </label>
+        </div>
+
+        <div class="action-row">
+          <button type="button" class="primary-button" [disabled]="modelRunning" (click)="executeSelectedModel()">
+            {{ modelRunning ? 'Executando...' : 'Executar e persistir' }}
+          </button>
+          <span class="model-message">{{ modelMessage }}</span>
+        </div>
+      </article>
+
+      <article class="panel batch-panel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Batch</p>
+            <h2>JSON ou CSV</h2>
+          </div>
+          <div class="segmented">
+            <button type="button" [class.active]="batchInputMode === 'json'" (click)="batchInputMode = 'json'">JSON</button>
+            <button type="button" [class.active]="batchInputMode === 'csv'" (click)="batchInputMode = 'csv'">CSV</button>
+          </div>
+        </div>
+
+        <textarea *ngIf="batchInputMode === 'json'" [(ngModel)]="batchRowsText"></textarea>
+        <textarea *ngIf="batchInputMode === 'csv'" [(ngModel)]="batchCsvText"></textarea>
+
+        <div class="action-row">
+          <button type="button" class="primary-button" [disabled]="batchRunning" (click)="executeBatch()">
+            {{ batchRunning ? 'Executando...' : 'Executar batch' }}
+          </button>
+        </div>
+      </article>
+
+      <article class="panel result-panel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Resultado</p>
+            <h2>Run persistida</h2>
+          </div>
+          <button type="button" class="ghost-button compact" [disabled]="!latestRun" (click)="exportLatestRunCsv()">CSV</button>
+        </div>
+
+        <ng-container *ngIf="latestRun; else noWorkbenchRun">
+          <div class="run-strip">
+            <span class="mono">{{ latestRun.model_name }}</span>
+            <strong>{{ latestRun.engine || 'n/a' }}</strong>
+          </div>
+          <div class="result-grid">
+            <div>
+              <span>Kdry</span>
+              <strong>{{ modelResultValue(latestRun, 'dry_bulk_modulus_gpa') }}</strong>
+            </div>
+            <div>
+              <span>Gdry</span>
+              <strong>{{ modelResultValue(latestRun, 'dry_shear_modulus_gpa') }}</strong>
+            </div>
+            <div>
+              <span>Vp</span>
+              <strong>{{ modelResultValue(latestRun, 'vp_m_s') }}</strong>
+            </div>
+            <div>
+              <span>Batch OK</span>
+              <strong>{{ modelResultValue(latestRun, 'successful_count') }}</strong>
+            </div>
+          </div>
+          <p class="run-summary">{{ latestRunSummary }}</p>
+          <p class="mono run-id">{{ latestRun.run_id }}</p>
+        </ng-container>
+
+        <ng-template #noWorkbenchRun>
+          <div class="empty-state">Execute um modelo para revisar o resultado.</div>
+        </ng-template>
+      </article>
+    </section>
+
     <section class="panel table-panel">
       <div class="panel-header">
         <div>
