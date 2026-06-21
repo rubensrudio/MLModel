@@ -172,6 +172,24 @@ OpenAPI documentation:
 http://127.0.0.1:8000/docs
 ```
 
+## Run the Frontend Locally
+
+Start the API first, then in a second shell:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend URL:
+
+```text
+http://127.0.0.1:4200
+```
+
+The frontend proxy forwards `/api` and `/health` to `http://127.0.0.1:8000`.
+
 ## Validated Local Runtime Flow
 
 The following workflow was validated on 2026-06-20.
@@ -887,5 +905,5 @@ same response units.
 
 ## Next Recommended Steps
 
-1. Add PNG export support later when frontend chart rendering exists.
-2. Start frontend only after the model-run/analytics contracts are stable.
+1. Expand the frontend Rock Physics workspace to execute and review model runs.
+2. Add PNG export support using the same rendered chart the user sees.

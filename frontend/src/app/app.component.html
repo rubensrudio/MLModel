@@ -1,0 +1,174 @@
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">ML</div>
+      <div>
+        <strong>MLModel</strong>
+        <span>Petrophysics Lab</span>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <a class="nav-item active">Overview</a>
+      <a class="nav-item">Samples</a>
+      <a class="nav-item">Rock Physics</a>
+      <a class="nav-item">Model Runs</a>
+    </nav>
+
+    <div class="runtime">
+      <span class="runtime-dot" [class.online]="health?.status === 'ok'"></span>
+      <div>
+        <strong>{{ health?.status === 'ok' ? 'Backend online' : 'Backend pending' }}</strong>
+        <span>{{ health?.version || 'no version' }}</span>
+      </div>
+    </div>
+  </aside>
+
+  <main class="workspace">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Workspace</p>
+        <h1>Acervo petrofisico</h1>
+      </div>
+      <div class="topbar-actions">
+        <button type="button" class="ghost-button" (click)="resetFilters()">Reset</button>
+        <button type="button" class="primary-button" (click)="loadWorkspace()">Refresh</button>
+      </div>
+    </header>
+
+    <section class="status-line" *ngIf="errorMessage">
+      {{ errorMessage }}
+    </section>
+
+    <section class="metric-grid">
+      <article class="metric">
+        <span>Amostras</span>
+        <strong>{{ summary?.sample_count ?? 0 }}</strong>
+      </article>
+      <article class="metric">
+        <span>Pocos</span>
+        <strong>{{ summary?.well_count ?? 0 }}</strong>
+      </article>
+      <article class="metric">
+        <span>Tipos de rocha</span>
+        <strong>{{ summary?.rock_type_count ?? 0 }}</strong>
+      </article>
+      <article class="metric">
+        <span>Porosidade media</span>
+        <strong>{{ ((summary?.average_porosity_fraction ?? 0) * 100) | number:'1.1-1' }}%</strong>
+      </article>
+      <article class="metric">
+        <span>Vp medio</span>
+        <strong>{{ summary?.average_vp_m_s ?? 0 | number:'1.0-0' }}</strong>
+      </article>
+    </section>
+
+    <section class="tool-band">
+      <label>
+        <span>Poco</span>
+        <select [(ngModel)]="selectedWell" (change)="applyFilters()">
+          <option value="">Todos</option>
+          <option *ngFor="let well of wells" [value]="well">{{ well }}</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Rocha</span>
+        <select [(ngModel)]="selectedRockType" (change)="applyFilters()">
+          <option value="">Todas</option>
+          <option *ngFor="let rockType of rockTypes" [value]="rockType">{{ rockType }}</option>
+        </select>
+      </label>
+
+      <div class="filter-summary">
+        {{ visibleSamples.length }} amostras no filtro atual
+      </div>
+    </section>
+
+    <section class="content-grid">
+      <article class="panel chart-panel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Rock Physics</p>
+            <h2>Crossplot porosidade x Vp</h2>
+          </div>
+          <div class="indicator">
+            <span>r</span>
+            <strong>{{ crossplot?.indicators?.pearson_correlation ?? 'n/a' }}</strong>
+          </div>
+        </div>
+        <div #crossplotChart class="chart"></div>
+      </article>
+
+      <article class="panel runs-panel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Model Runs</p>
+            <h2>Ultima execucao</h2>
+          </div>
+          <button type="button" class="ghost-button compact" [disabled]="!latestRun" (click)="exportLatestRunCsv()">
+            CSV
+          </button>
+        </div>
+
+        <ng-container *ngIf="latestRun; else noRun">
+          <dl class="run-details">
+            <dt>Modelo</dt>
+            <dd>{{ latestRun.model_name }}</dd>
+            <dt>Engine</dt>
+            <dd>{{ latestRun.engine || 'n/a' }}</dd>
+            <dt>Run ID</dt>
+            <dd class="mono">{{ latestRun.run_id }}</dd>
+            <dt>MLflow</dt>
+            <dd class="mono">{{ latestRun.mlflow_run_id || 'not logged' }}</dd>
+          </dl>
+        </ng-container>
+
+        <ng-template #noRun>
+          <div class="empty-state">Nenhuma execucao registrada ainda.</div>
+        </ng-template>
+      </article>
+    </section>
+
+    <section class="panel table-panel">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow">Samples</p>
+          <h2>Tabela de amostras</h2>
+        </div>
+        <span class="table-count">{{ visibleSamples.length }} linhas</span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Amostra</th>
+              <th>Poco</th>
+              <th>Prof. m</th>
+              <th>Porosidade</th>
+              <th>Perm. mD</th>
+              <th>Rocha</th>
+              <th>Vp m/s</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let sample of visibleSamples">
+              <td class="mono">{{ sample.sample_code }}</td>
+              <td>{{ sample.well }}</td>
+              <td>{{ sample.depth_m | number:'1.1-1' }}</td>
+              <td>{{ sample.porosity_fraction * 100 | number:'1.1-1' }}%</td>
+              <td>{{ sample.permeability_md | number:'1.0-1' }}</td>
+              <td>{{ sample.rock_type }}</td>
+              <td>{{ sample.vp_m_s | number:'1.0-0' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="loading-cover" *ngIf="loading">
+      Carregando dados do backend...
+    </div>
+  </main>
+</div>

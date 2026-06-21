@@ -26,3 +26,7 @@ env/
 build/
 dist/
 *.egg-info/
+
+# Node
+node_modules/
+.angular/
