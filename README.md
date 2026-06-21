@@ -1,7 +1,7 @@
-# MLModel / WebLab Petrophysics
+# MLModel
 
-MLModel is a full-stack WebLab Petrophysics application for petrophysical sample analysis and rock
-physics modeling.
+MLModel is a full-stack portfolio application for petrophysical sample analysis and rock physics
+modeling.
 
 The current implementation includes a tested Python API and an Angular frontend for petrophysical
 sample exploration, basic analytics, unit conversions, persisted saved analyses, persisted model

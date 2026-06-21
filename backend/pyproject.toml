@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mlmodel-backend"
 version = "0.1.0"
-description = "Backend API for MLModel / WebLab Petrophysics"
+description = "Backend API for MLModel petrophysical analysis"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

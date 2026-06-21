@@ -1,6 +1,6 @@
 # MLModel Frontend
 
-Angular frontend shell for MLModel / WebLab Petrophysics.
+Angular frontend shell for MLModel.
 
 ## Local Development
 

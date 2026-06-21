@@ -1,6 +1,6 @@
 # MLModel Backend
 
-Python backend for WebLab Petrophysics / MLModel.
+Python backend for MLModel.
 
 ## Local Development
 
