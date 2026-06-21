@@ -1,10 +1,10 @@
-# Infraestrutura
+# Infrastructure
 
-Infraestrutura local para desenvolvimento do MLModel.
+Local infrastructure for MLModel development.
 
 ## PostgreSQL
 
-O backend usa automaticamente PostgreSQL quando estas variaveis existem no ambiente:
+The backend automatically uses PostgreSQL when these environment variables exist:
 
 ```powershell
 $env:POSTGRESQL_HOST = "localhost"
@@ -13,24 +13,23 @@ $env:POSTGRESQL_USER = "mlmodel"
 $env:POSTGRESQL_PASSWORD = "mlmodel"
 ```
 
-O database padrao e `mlmodel`. Use `MLMODEL_POSTGRESQL_DATABASE` apenas se precisar sobrescrever.
-O schema padrao e `public`; use `MLMODEL_POSTGRESQL_SCHEMA` apenas se precisar sobrescrever.
+The default database is `mlmodel`. Use `MLMODEL_POSTGRESQL_DATABASE` only if you need to override it.
+The default schema is `public`; use `MLMODEL_POSTGRESQL_SCHEMA` only if you need to override it.
 
-Tambem e possivel usar `MLMODEL_DATABASE_URL` como connection string completa. O
-`infra/docker-compose.yml` existe apenas como utilitario opcional para desenvolvedores sem um
-PostgreSQL disponivel.
-Use `MLMODEL_ANALYSIS_REPOSITORY_BACKEND=local` apenas se quiser forcar persistencia em memoria mesmo
-com variaveis PostgreSQL presentes.
+You can also use `MLMODEL_DATABASE_URL` as a full connection string. `infra/docker-compose.yml`
+exists only as an optional utility for developers without an available PostgreSQL instance.
+Use `MLMODEL_ANALYSIS_REPOSITORY_BACKEND=local` only if you want to force in-memory persistence even
+when PostgreSQL variables are present.
 
-Sem essas variaveis, o backend usa persistencia local em memoria para saved analyses.
+Without these variables, the backend uses local in-memory persistence for saved analyses.
 
-Diagnostico:
+Diagnostics:
 
 ```text
 GET /health/persistence
 ```
 
-Consulta manual:
+Manual query:
 
 ```sql
 select table_schema, table_name
@@ -40,5 +39,5 @@ where table_name = 'saved_analyses';
 
 ## MLflow
 
-MLflow ainda nao foi adicionado ao Compose. A integracao deve entrar depois que model runs e
-rastreamento de parametros/metricas estiverem definidos no backend.
+MLflow has not been added to Compose yet. The integration should be added after model runs and
+parameter/metric tracking are defined in the backend.

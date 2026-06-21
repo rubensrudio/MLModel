@@ -2,6 +2,7 @@
 .claude/
 .specs/
 docs/
+outputs/
 
 # Python
 __pycache__/

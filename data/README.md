@@ -1,5 +1,5 @@
-# Dados
+# Data
 
-Diretorio para fixtures sinteticas, dados brutos locais e dados processados.
+Directory for synthetic fixtures, local raw data, and processed data.
 
-Dados reais sensiveis nao devem ser versionados aqui.
+Real sensitive data must not be versioned here.

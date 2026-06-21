@@ -1,6 +1,6 @@
 # Fixtures
 
-Dados sinteticos e pequenos para desenvolvimento local.
+Small synthetic datasets for local development.
 
-Os dados aqui espelham a forma dos prototipos do WebLab Petrofisico, mas nao devem conter dados reais
-sensíveis.
+The data here mirrors the shape of WebLab Petrophysics prototypes, but it must not contain real
+sensitive data.

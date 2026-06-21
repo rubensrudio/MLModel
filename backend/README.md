@@ -1,8 +1,8 @@
 # MLModel Backend
 
-Backend Python do WebLab Petrofisico / MLModel.
+Python backend for WebLab Petrophysics / MLModel.
 
-## Desenvolvimento local
+## Local Development
 
 ```powershell
 cd backend
@@ -13,7 +13,7 @@ pytest
 uvicorn mlmodel.main:app --reload
 ```
 
-O primeiro incremento expõe apenas o health check:
+The first increment exposes only the health check:
 
 ```text
 GET /health
