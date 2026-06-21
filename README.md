@@ -911,6 +911,13 @@ same response units.
 - Do not commit real sensitive data.
 - Do not commit local planning documentation from `.specs/`, `.claude/`, or `docs/`.
 
+## License
+
+Copyright (C) 2026 Rubens Rudio.
+
+This project is licensed under the GNU General Public License v2.0 only (`GPL-2.0-only`). See
+[LICENSE](LICENSE) for the full license text.
+
 ## Next Recommended Steps
 
 The initial backend and frontend implementation plan is complete. Recommended follow-up work:
