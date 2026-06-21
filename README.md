@@ -905,5 +905,9 @@ same response units.
 
 ## Next Recommended Steps
 
-1. Expand the frontend Rock Physics workspace to execute and review model runs.
+The initial backend and frontend implementation plan is complete. Recommended follow-up work:
+
+1. Add UI smoke tests for route navigation and backend-proxy flows.
 2. Add PNG export support using the same rendered chart the user sees.
+3. Prepare DSIS/DSIF adapters when corporate contracts and credentials are available.
+4. Improve frontend forms with validation feedback and saved presets.

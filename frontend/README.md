@@ -42,3 +42,18 @@ The first shell includes:
 
 The frontend does not calculate scientific results. It only sends parameters to the backend and
 renders persisted responses.
+
+## Routes
+
+```text
+/dashboard
+/samples
+/rock-physics
+/model-runs
+```
+
+Shared API contracts and HTTP calls live in:
+
+```text
+src/app/core/api.service.ts
+```

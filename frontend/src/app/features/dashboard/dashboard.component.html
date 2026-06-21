@@ -1,0 +1,86 @@
+<header class="topbar">
+  <div>
+    <p class="eyebrow">Workspace</p>
+    <h1>Acervo petrofisico</h1>
+  </div>
+  <div class="topbar-actions">
+    <button type="button" class="ghost-button" routerLink="/samples">Samples</button>
+    <button type="button" class="primary-button" (click)="loadDashboard()">Refresh</button>
+  </div>
+</header>
+
+<section class="status-line" *ngIf="errorMessage">
+  {{ errorMessage }}
+</section>
+
+<section class="metric-grid">
+  <article class="metric">
+    <span>Amostras</span>
+    <strong>{{ summary?.sample_count ?? 0 }}</strong>
+  </article>
+  <article class="metric">
+    <span>Pocos</span>
+    <strong>{{ summary?.well_count ?? 0 }}</strong>
+  </article>
+  <article class="metric">
+    <span>Tipos de rocha</span>
+    <strong>{{ summary?.rock_type_count ?? 0 }}</strong>
+  </article>
+  <article class="metric">
+    <span>Porosidade media</span>
+    <strong>{{ ((summary?.average_porosity_fraction ?? 0) * 100) | number:'1.1-1' }}%</strong>
+  </article>
+  <article class="metric">
+    <span>Vp medio</span>
+    <strong>{{ summary?.average_vp_m_s ?? 0 | number:'1.0-0' }}</strong>
+  </article>
+</section>
+
+<section class="content-grid">
+  <article class="panel chart-panel">
+    <div class="panel-header">
+      <div>
+        <p class="eyebrow">Rock Physics</p>
+        <h2>Crossplot porosidade x Vp</h2>
+      </div>
+      <div class="indicator">
+        <span>r</span>
+        <strong>{{ crossplot?.indicators?.pearson_correlation ?? 'n/a' }}</strong>
+      </div>
+    </div>
+    <div #crossplotChart class="chart"></div>
+  </article>
+
+  <article class="panel runs-panel">
+    <div class="panel-header">
+      <div>
+        <p class="eyebrow">Model Runs</p>
+        <h2>Ultima execucao</h2>
+      </div>
+      <button type="button" class="ghost-button compact" [disabled]="!latestRun" (click)="exportLatestRunCsv()">
+        CSV
+      </button>
+    </div>
+
+    <ng-container *ngIf="latestRun; else noRun">
+      <dl class="run-details">
+        <dt>Modelo</dt>
+        <dd>{{ latestRun.model_name }}</dd>
+        <dt>Engine</dt>
+        <dd>{{ latestRun.engine || 'n/a' }}</dd>
+        <dt>Run ID</dt>
+        <dd class="mono">{{ latestRun.run_id }}</dd>
+        <dt>MLflow</dt>
+        <dd class="mono">{{ latestRun.mlflow_run_id || 'not logged' }}</dd>
+      </dl>
+    </ng-container>
+
+    <ng-template #noRun>
+      <div class="empty-state">Nenhuma execucao registrada ainda.</div>
+    </ng-template>
+  </article>
+</section>
+
+<div class="loading-cover" *ngIf="loading">
+  Carregando dados do backend...
+</div>

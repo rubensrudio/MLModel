@@ -1,0 +1,59 @@
+<header class="topbar">
+  <div>
+    <p class="eyebrow">Model Runs</p>
+    <h1>Execucoes persistidas</h1>
+  </div>
+  <button type="button" class="primary-button" (click)="loadRuns()">Refresh</button>
+</header>
+
+<section class="status-line" *ngIf="errorMessage">
+  {{ errorMessage }}
+</section>
+
+<section class="panel table-panel">
+  <div class="panel-header">
+    <div>
+      <p class="eyebrow">Registry operacional</p>
+      <h2>Runs no backend</h2>
+    </div>
+    <span class="table-count">{{ modelRuns.length }} runs</span>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Created</th>
+          <th>Modelo</th>
+          <th>Engine</th>
+          <th>Resumo</th>
+          <th>MLflow</th>
+          <th>Run ID</th>
+          <th>Export</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let run of modelRuns">
+          <td>{{ run.created_at | date:'short' }}</td>
+          <td>{{ run.model_name }}</td>
+          <td>{{ run.engine || 'n/a' }}</td>
+          <td>{{ resultSummary(run) }}</td>
+          <td class="mono">{{ run.mlflow_run_id || 'not logged' }}</td>
+          <td class="mono">{{ run.run_id }}</td>
+          <td>
+            <button type="button" class="ghost-button compact" (click)="exportCsv(run)">CSV</button>
+            <button type="button" class="ghost-button compact" (click)="exportJson(run)">JSON</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="empty-state" *ngIf="!loading && modelRuns.length === 0">
+    Nenhuma execucao persistida ainda.
+  </div>
+</section>
+
+<div class="loading-cover" *ngIf="loading">
+  Carregando model runs...
+</div>

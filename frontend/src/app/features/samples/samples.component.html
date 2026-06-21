@@ -1,0 +1,81 @@
+<header class="topbar">
+  <div>
+    <p class="eyebrow">Samples</p>
+    <h1>Tabela de amostras</h1>
+  </div>
+  <div class="topbar-actions">
+    <button type="button" class="ghost-button" (click)="resetFilters()">Reset</button>
+    <button type="button" class="primary-button" (click)="loadSamples()">Refresh</button>
+  </div>
+</header>
+
+<section class="status-line" *ngIf="errorMessage">
+  {{ errorMessage }}
+</section>
+
+<section class="tool-band">
+  <label>
+    <span>Poco</span>
+    <select [(ngModel)]="selectedWell">
+      <option value="">Todos</option>
+      <option *ngFor="let well of wells" [value]="well">{{ well }}</option>
+    </select>
+  </label>
+
+  <label>
+    <span>Rocha</span>
+    <select [(ngModel)]="selectedRockType">
+      <option value="">Todas</option>
+      <option *ngFor="let rockType of rockTypes" [value]="rockType">{{ rockType }}</option>
+    </select>
+  </label>
+
+  <div class="filter-summary">
+    {{ visibleSamples.length }} amostras no filtro atual
+  </div>
+</section>
+
+<section class="panel table-panel">
+  <div class="panel-header">
+    <div>
+      <p class="eyebrow">Dataset</p>
+      <h2>Fixtures sinteticas</h2>
+    </div>
+    <span class="table-count">{{ visibleSamples.length }} linhas</span>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Amostra</th>
+          <th>Poco</th>
+          <th>Prof. m</th>
+          <th>Porosidade</th>
+          <th>Perm. mD</th>
+          <th>Rocha</th>
+          <th>Litologia</th>
+          <th>Vp m/s</th>
+          <th>Pressao psi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let sample of visibleSamples">
+          <td class="mono">{{ sample.sample_code }}</td>
+          <td>{{ sample.well }}</td>
+          <td>{{ sample.depth_m | number:'1.1-1' }}</td>
+          <td>{{ sample.porosity_fraction * 100 | number:'1.1-1' }}%</td>
+          <td>{{ sample.permeability_md | number:'1.0-1' }}</td>
+          <td>{{ sample.rock_type }}</td>
+          <td>{{ sample.lithology_micro }}</td>
+          <td>{{ sample.vp_m_s | number:'1.0-0' }}</td>
+          <td>{{ sample.confining_pressure_psi | number:'1.0-0' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="loading-cover" *ngIf="loading">
+  Carregando amostras...
+</div>
