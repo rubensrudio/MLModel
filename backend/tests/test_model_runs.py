@@ -174,6 +174,180 @@ def test_run_and_save_gassmann_model_run(monkeypatch: MonkeyPatch) -> None:
     assert "Gassmann low-frequency fluid substitution" in payload["assumptions"]
 
 
+def test_run_and_save_softsand_model_run(monkeypatch: MonkeyPatch) -> None:
+    _force_local_repository(monkeypatch)
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/model-runs/rockphypy/softsand",
+        json={
+            "parameters": {
+                "mineral_bulk_modulus_gpa": 37.0,
+                "mineral_shear_modulus_gpa": 44.0,
+                "porosity_fraction": 0.25,
+                "critical_porosity_fraction": 0.4,
+                "coordination_number": 8.6,
+                "effective_stress_mpa": 20.0,
+                "reduced_shear_factor": 0.5,
+            }
+        },
+    )
+
+    assert response.status_code == 201
+    payload = response.json()
+    assert payload["model_name"] == "rockphypy.softsand"
+    assert payload["engine"] in {"rockphypy", "local-granular-media-fallback"}
+    assert payload["parameters"]["porosity_fraction"] == 0.25
+    assert payload["result"]["dry_bulk_modulus_gpa"] > 0
+    assert "Soft-sand dry-frame model" in payload["assumptions"]
+
+
+def test_run_and_save_stiffsand_model_run(monkeypatch: MonkeyPatch) -> None:
+    _force_local_repository(monkeypatch)
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/model-runs/rockphypy/stiffsand",
+        json={
+            "parameters": {
+                "mineral_bulk_modulus_gpa": 37.0,
+                "mineral_shear_modulus_gpa": 44.0,
+                "porosity_fraction": 0.25,
+                "critical_porosity_fraction": 0.4,
+                "coordination_number": 8.6,
+                "effective_stress_mpa": 20.0,
+                "reduced_shear_factor": 0.5,
+            }
+        },
+    )
+
+    assert response.status_code == 201
+    payload = response.json()
+    assert payload["model_name"] == "rockphypy.stiffsand"
+    assert payload["engine"] in {"rockphypy", "local-granular-media-fallback"}
+    assert payload["parameters"]["porosity_fraction"] == 0.25
+    assert payload["result"]["dry_shear_modulus_gpa"] > 0
+    assert "Stiff-sand dry-frame model" in payload["assumptions"]
+
+
+def test_run_and_save_aki_richards_model_run(monkeypatch: MonkeyPatch) -> None:
+    _force_local_repository(monkeypatch)
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/model-runs/rockphypy/avo/aki-richards",
+        json={
+            "parameters": {
+                "incident_angles_degrees": [0, 10, 20],
+                "vp_upper_m_s": 3000.0,
+                "vp_lower_m_s": 3300.0,
+                "vs_upper_m_s": 1500.0,
+                "vs_lower_m_s": 1650.0,
+                "density_upper_kg_m3": 2300.0,
+                "density_lower_kg_m3": 2400.0,
+            }
+        },
+    )
+
+    assert response.status_code == 201
+    payload = response.json()
+    assert payload["model_name"] == "rockphypy.avo.aki_richards"
+    assert payload["engine"] in {"rockphypy", "local-avo-fallback"}
+    assert payload["parameters"]["incident_angles_degrees"] == [0.0, 10.0, 20.0]
+    assert len(payload["result"]["pp_reflectivity"]) == 3
+    assert "Aki-Richards PP reflectivity approximation" in payload["assumptions"]
+
+
+def test_run_and_save_rockphypy_json_batch_model_run(monkeypatch: MonkeyPatch) -> None:
+    _force_local_repository(monkeypatch)
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/model-runs/rockphypy/batch",
+        json={
+            "model": "softsand",
+            "rows": [
+                {
+                    "mineral_bulk_modulus_gpa": 37.0,
+                    "mineral_shear_modulus_gpa": 44.0,
+                    "porosity_fraction": 0.25,
+                    "critical_porosity_fraction": 0.4,
+                    "coordination_number": 8.6,
+                    "effective_stress_mpa": 20.0,
+                    "reduced_shear_factor": 0.5,
+                },
+                {
+                    "mineral_bulk_modulus_gpa": 37.0,
+                    "mineral_shear_modulus_gpa": 44.0,
+                    "porosity_fraction": 1.2,
+                    "critical_porosity_fraction": 0.4,
+                    "coordination_number": 8.6,
+                    "effective_stress_mpa": 20.0,
+                    "reduced_shear_factor": 0.5,
+                },
+            ],
+        },
+    )
+
+    assert response.status_code == 201
+    payload = response.json()
+    assert payload["model_name"] == "rockphypy.batch.softsand"
+    assert payload["parameters"]["input_format"] == "json"
+    assert payload["result"]["row_count"] == 2
+    assert payload["result"]["successful_count"] == 1
+    assert payload["result"]["failed_count"] == 1
+    assert payload["result"]["rows"][0]["status"] == "success"
+    assert payload["result"]["rows"][1]["status"] == "error"
+
+
+def test_run_and_save_rockphypy_csv_batch_model_run(monkeypatch: MonkeyPatch) -> None:
+    _force_local_repository(monkeypatch)
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/model-runs/rockphypy/batch",
+        json={
+            "model": "avo.aki-richards",
+            "csv_text": (
+                "incident_angles_degrees,vp_upper_m_s,vp_lower_m_s,vs_upper_m_s,"
+                "vs_lower_m_s,density_upper_kg_m3,density_lower_kg_m3\n"
+                "\"0;10;20\",3000,3300,1500,1650,2300,2400\n"
+            ),
+        },
+    )
+
+    assert response.status_code == 201
+    payload = response.json()
+    assert payload["model_name"] == "rockphypy.batch.avo.aki_richards"
+    assert payload["parameters"]["input_format"] == "csv"
+    assert payload["result"]["row_count"] == 1
+    assert payload["result"]["successful_count"] == 1
+    assert payload["result"]["rows"][0]["parameters"]["incident_angles_degrees"] == [
+        0.0,
+        10.0,
+        20.0,
+    ]
+    assert len(payload["result"]["rows"][0]["result"]["pp_reflectivity"]) == 3
+
+
+def test_run_and_save_rockphypy_batch_rejects_multiple_input_formats(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    _force_local_repository(monkeypatch)
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/model-runs/rockphypy/batch",
+        json={
+            "model": "softsand",
+            "rows": [{"porosity_fraction": 0.25}],
+            "csv_text": "porosity_fraction\n0.25\n",
+        },
+    )
+
+    assert response.status_code == 422
+
+
 def test_get_model_run_returns_404_for_unknown_id(monkeypatch: MonkeyPatch) -> None:
     _force_local_repository(monkeypatch)
     client = TestClient(create_app())

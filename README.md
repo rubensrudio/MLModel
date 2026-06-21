@@ -135,7 +135,7 @@ python -m pytest
 Current expected result:
 
 ```text
-55 passed
+69 passed
 ```
 
 ## Run Lint
@@ -255,6 +255,19 @@ POST /api/model-runs/rockphypy/gassmann
 The returned payload should include `mlflow_run_id`, the row in `public.model_runs` should persist
 that id, and the MLflow UI at `http://127.0.0.1:5000` should show params, metrics, and the
 `model_run.json` artifact.
+
+### End-to-End Validated Test
+
+The practical end-to-end flow validated was:
+
+1. Create a saved analysis through `POST /api/analyses`.
+2. Execute `POST /api/model-runs/rockphypy/gassmann` with `saved_analysis_id`.
+3. Confirm the API response includes `run_id`, `saved_analysis_id`, `mlflow_run_id`, and model
+   results.
+4. Confirm `public.model_runs.mlflow_run_id` is populated in PostgreSQL.
+5. Confirm `GET /api/analyses/{analysis_id}/model-runs` returns the linked model run.
+6. Confirm the MLflow UI shows experiment `MLModel Rock Physics`, params, metrics, and
+   `model_run.json`.
 
 ## Implemented Endpoints
 
@@ -652,6 +665,10 @@ GET /api/model-runs?saved_analysis_id={analysis_id}
 GET /api/model-runs/{run_id}
 GET /api/analyses/{analysis_id}/model-runs
 POST /api/model-runs/rockphypy/gassmann
+POST /api/model-runs/rockphypy/softsand
+POST /api/model-runs/rockphypy/stiffsand
+POST /api/model-runs/rockphypy/avo/aki-richards
+POST /api/model-runs/rockphypy/batch
 ```
 
 Example generic model run:
@@ -691,6 +708,80 @@ Example Gassmann run with persistence:
 }
 ```
 
+Example soft-sand or stiff-sand run with persistence:
+
+```json
+{
+  "parameters": {
+    "mineral_bulk_modulus_gpa": 37.0,
+    "mineral_shear_modulus_gpa": 44.0,
+    "porosity_fraction": 0.25,
+    "critical_porosity_fraction": 0.4,
+    "coordination_number": 8.6,
+    "effective_stress_mpa": 20.0,
+    "reduced_shear_factor": 0.5
+  },
+  "saved_analysis_id": null
+}
+```
+
+Example Aki-Richards AVO run with persistence:
+
+```json
+{
+  "parameters": {
+    "incident_angles_degrees": [0, 10, 20, 30],
+    "vp_upper_m_s": 3000.0,
+    "vp_lower_m_s": 3300.0,
+    "vs_upper_m_s": 1500.0,
+    "vs_lower_m_s": 1650.0,
+    "density_upper_kg_m3": 2300.0,
+    "density_lower_kg_m3": 2400.0
+  },
+  "saved_analysis_id": null
+}
+```
+
+Example JSON batch run:
+
+```json
+{
+  "model": "softsand",
+  "rows": [
+    {
+      "mineral_bulk_modulus_gpa": 37.0,
+      "mineral_shear_modulus_gpa": 44.0,
+      "porosity_fraction": 0.25,
+      "critical_porosity_fraction": 0.4,
+      "coordination_number": 8.6,
+      "effective_stress_mpa": 20.0,
+      "reduced_shear_factor": 0.5
+    }
+  ],
+  "saved_analysis_id": null
+}
+```
+
+Example CSV batch run:
+
+```json
+{
+  "model": "avo.aki-richards",
+  "csv_text": "incident_angles_degrees,vp_upper_m_s,vp_lower_m_s,vs_upper_m_s,vs_lower_m_s,density_upper_kg_m3,density_lower_kg_m3\n\"0;10;20\",3000,3300,1500,1650,2300,2400\n",
+  "saved_analysis_id": null
+}
+```
+
+Batch model values:
+
+- `gassmann`
+- `softsand`
+- `stiffsand`
+- `avo.aki-richards`
+
+Batch runs persist one `model_runs` record with row-level results. Invalid rows do not stop the
+entire batch; they are stored with `status: "error"` and validation details.
+
 ### Optional MLflow Logging
 
 Model runs are logged to MLflow only when `MLMODEL_MLFLOW_TRACKING_URI` is configured:
@@ -711,6 +802,9 @@ When enabled, the backend logs:
 
 ```http
 POST /api/models/rockphypy/gassmann/run
+POST /api/models/rockphypy/softsand/run
+POST /api/models/rockphypy/stiffsand/run
+POST /api/models/rockphypy/avo/aki-richards/run
 ```
 
 Example request:
@@ -741,27 +835,37 @@ The endpoint returns:
 - calculation engine
 - model assumptions
 
+The soft-sand and stiff-sand endpoints return dry-frame bulk and shear moduli in GPa. The
+Aki-Richards endpoint returns PP/PS reflectivity series, intercept, gradient, calculation engine,
+and model assumptions.
+
 ## RockPhyPy Compatibility Note
 
-`rockphypy` is declared as a backend dependency. During the first implementation, the package
-installed successfully, but importing `rockphypy` directly failed because its `QI.py` module defines a
-Matplotlib color map that is rejected by the currently installed Matplotlib version.
+`rockphypy` is declared as a backend dependency. RockPhyPy 0.0.2 defines a legacy Matplotlib
+color map in `QI.py` with duplicated color-stop positions. Newer Matplotlib versions reject that
+definition during package import.
 
-To keep the backend usable and tested, the Gassmann endpoint currently:
+The backend handles this compatibility case in two ways:
 
-1. Tries to use RockPhyPy.
-2. Falls back to a local equivalent implementation for:
-   - critical porosity dry frame
-   - Gassmann fluid substitution
-   - velocity and density calculation
+1. `pyproject.toml` pins Matplotlib to `<3.11` for fresh backend installs.
+2. `mlmodel.integrations.rockphypy_compat` temporarily normalizes duplicated legacy color-stop
+   positions while importing RockPhyPy, so an already-installed newer Matplotlib can still load
+   the package.
+
+The Gassmann endpoint now uses RockPhyPy when it is available. The local implementation remains as
+a runtime fallback for:
+
+- critical porosity dry frame
+- Gassmann fluid substitution
+- velocity and density calculation
 
 The response field `engine` shows which path was used:
 
 - `rockphypy`
 - `local-gassmann-fallback`
 
-This should be revisited before expanding to more RockPhyPy models such as `softsand`, `stiffsand`,
-or `AVO`.
+RockPhyPy velocity outputs are treated as m/s in the backend response. The local fallback uses the
+same response units.
 
 ## Development Rules
 
@@ -774,6 +878,5 @@ or `AVO`.
 ## Next Recommended Steps
 
 1. Add PNG export support later when frontend chart rendering exists.
-2. Resolve the RockPhyPy/Matplotlib compatibility issue.
-3. Add `softsand` and `AVO` model endpoints.
-4. Start frontend only after the model-run/analytics contracts are stable.
+2. Add batch result export/download helpers if users need CSV output from persisted runs.
+3. Start frontend only after the model-run/analytics contracts are stable.

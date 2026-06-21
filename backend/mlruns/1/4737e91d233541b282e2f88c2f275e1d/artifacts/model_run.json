@@ -1,0 +1,33 @@
+{
+  "model_name": "rockphypy.softsand",
+  "model_version": null,
+  "engine": "rockphypy",
+  "parameters": {
+    "mineral_bulk_modulus_gpa": 37.0,
+    "mineral_shear_modulus_gpa": 44.0,
+    "porosity_fraction": 0.25,
+    "critical_porosity_fraction": 0.4,
+    "coordination_number": 8.6,
+    "effective_stress_mpa": 20.0,
+    "reduced_shear_factor": 0.5
+  },
+  "result": {
+    "dry_bulk_modulus_gpa": 4.130895310378689,
+    "dry_shear_modulus_gpa": 3.93962458158008,
+    "engine": "rockphypy",
+    "assumptions": [
+      "Soft-sand dry-frame model",
+      "Hertz-Mindlin critical porosity endpoint",
+      "Elastic moduli in GPa",
+      "Effective stress in MPa"
+    ]
+  },
+  "assumptions": [
+    "Soft-sand dry-frame model",
+    "Hertz-Mindlin critical porosity endpoint",
+    "Elastic moduli in GPa",
+    "Effective stress in MPa"
+  ],
+  "saved_analysis_id": null,
+  "mlflow_run_id": null
+}

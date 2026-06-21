@@ -1,0 +1,50 @@
+{
+  "model_name": "rockphypy.avo.aki_richards",
+  "model_version": null,
+  "engine": "rockphypy",
+  "parameters": {
+    "incident_angles_degrees": [
+      0.0,
+      10.0,
+      20.0,
+      30.0
+    ],
+    "vp_upper_m_s": 3000.0,
+    "vp_lower_m_s": 3300.0,
+    "vs_upper_m_s": 1500.0,
+    "vs_lower_m_s": 1650.0,
+    "density_upper_kg_m3": 2300.0,
+    "density_lower_kg_m3": 2400.0
+  },
+  "result": {
+    "pp_reflectivity": [
+      0.06889564336372847,
+      0.06686282906697123,
+      0.0615743151536328,
+      0.05563998649105033
+    ],
+    "ps_reflectivity": [
+      -0.0,
+      -0.024461060253941003,
+      -0.044336031243231155,
+      -0.05580501718460792
+    ],
+    "intercept": 0.06889564336372847,
+    "gradient": -0.06889564336372847,
+    "engine": "rockphypy",
+    "assumptions": [
+      "Aki-Richards PP reflectivity approximation",
+      "Incident angles in degrees",
+      "Velocities in m/s",
+      "Densities in kg/m3"
+    ]
+  },
+  "assumptions": [
+    "Aki-Richards PP reflectivity approximation",
+    "Incident angles in degrees",
+    "Velocities in m/s",
+    "Densities in kg/m3"
+  ],
+  "saved_analysis_id": null,
+  "mlflow_run_id": null
+}

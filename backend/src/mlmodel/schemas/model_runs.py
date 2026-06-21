@@ -1,9 +1,11 @@
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from mlmodel.schemas.rock_physics import GassmannRequest
+from mlmodel.schemas.rock_physics import AkiRichardsRequest, GassmannRequest, GranularMediaRequest
+
+RockPhyPyBatchModel = Literal["gassmann", "softsand", "stiffsand", "avo.aki-richards"]
 
 
 class ModelRunCreate(BaseModel):
@@ -27,3 +29,26 @@ class ModelRun(ModelRunCreate):
 class GassmannModelRunRequest(BaseModel):
     parameters: GassmannRequest
     saved_analysis_id: str | None = None
+
+
+class GranularMediaModelRunRequest(BaseModel):
+    parameters: GranularMediaRequest
+    saved_analysis_id: str | None = None
+
+
+class AkiRichardsModelRunRequest(BaseModel):
+    parameters: AkiRichardsRequest
+    saved_analysis_id: str | None = None
+
+
+class RockPhyPyBatchModelRunRequest(BaseModel):
+    model: RockPhyPyBatchModel
+    rows: list[dict[str, Any]] | None = Field(default=None, min_length=1)
+    csv_text: str | None = Field(default=None, min_length=1)
+    saved_analysis_id: str | None = None
+
+    @model_validator(mode="after")
+    def validate_single_batch_input(self) -> "RockPhyPyBatchModelRunRequest":
+        if bool(self.rows) == bool(self.csv_text):
+            raise ValueError("Provide exactly one batch input: rows or csv_text.")
+        return self
