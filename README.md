@@ -135,7 +135,7 @@ python -m pytest
 Current expected result:
 
 ```text
-69 passed
+73 passed
 ```
 
 ## Run Lint
@@ -663,6 +663,8 @@ POST /api/model-runs
 GET /api/model-runs
 GET /api/model-runs?saved_analysis_id={analysis_id}
 GET /api/model-runs/{run_id}
+GET /api/model-runs/{run_id}/export/json
+GET /api/model-runs/{run_id}/export/csv
 GET /api/analyses/{analysis_id}/model-runs
 POST /api/model-runs/rockphypy/gassmann
 POST /api/model-runs/rockphypy/softsand
@@ -782,6 +784,14 @@ Batch model values:
 Batch runs persist one `model_runs` record with row-level results. Invalid rows do not stop the
 entire batch; they are stored with `status: "error"` and validation details.
 
+Model-run exports:
+
+- `GET /api/model-runs/{run_id}/export/json` returns the full persisted model run.
+- `GET /api/model-runs/{run_id}/export/csv` returns `text/csv`.
+- Simple runs export one row with `parameters.*` and `result.*` columns.
+- Batch runs export one row per batch row with `parameters.*`, `result.*`, `status`, and `error`
+  columns.
+
 ### Optional MLflow Logging
 
 Model runs are logged to MLflow only when `MLMODEL_MLFLOW_TRACKING_URI` is configured:
@@ -878,5 +888,4 @@ same response units.
 ## Next Recommended Steps
 
 1. Add PNG export support later when frontend chart rendering exists.
-2. Add batch result export/download helpers if users need CSV output from persisted runs.
-3. Start frontend only after the model-run/analytics contracts are stable.
+2. Start frontend only after the model-run/analytics contracts are stable.

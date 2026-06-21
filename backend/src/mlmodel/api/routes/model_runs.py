@@ -1,8 +1,10 @@
 import csv
+import json
 from io import StringIO
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import Response
 from pydantic import BaseModel, ValidationError
 
 from mlmodel.core.config import get_settings
@@ -49,13 +51,28 @@ def get_model_run(
     run_id: str,
     service: ModelRunService = Depends(get_model_run_service),
 ) -> ModelRun:
-    model_run = service.get_model_run(run_id)
-    if model_run is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Model run '{run_id}' was not found.",
-        )
-    return model_run
+    return _get_existing_model_run(run_id, service)
+
+
+@router.get("/{run_id}/export/json", response_model=ModelRun)
+def export_model_run_json(
+    run_id: str,
+    service: ModelRunService = Depends(get_model_run_service),
+) -> ModelRun:
+    return _get_existing_model_run(run_id, service)
+
+
+@router.get("/{run_id}/export/csv")
+def export_model_run_csv(
+    run_id: str,
+    service: ModelRunService = Depends(get_model_run_service),
+) -> Response:
+    model_run = _get_existing_model_run(run_id, service)
+    return Response(
+        content=_model_run_to_csv(model_run),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="model-run-{run_id}.csv"'},
+    )
 
 
 @router.post(
@@ -305,3 +322,91 @@ def _create_model_run_with_optional_mlflow(
     if mlflow_run_id:
         model_run = model_run.model_copy(update={"mlflow_run_id": mlflow_run_id})
     return service.create_model_run(model_run)
+
+
+def _get_existing_model_run(run_id: str, service: ModelRunService) -> ModelRun:
+    model_run = service.get_model_run(run_id)
+    if model_run is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Model run '{run_id}' was not found.",
+        )
+    return model_run
+
+
+def _model_run_to_csv(model_run: ModelRun) -> str:
+    if _is_batch_model_run(model_run):
+        rows = [
+            _flatten_batch_row(model_run, row)
+            for row in model_run.result.get("rows", [])
+        ]
+    else:
+        rows = [_flatten_simple_model_run(model_run)]
+
+    return _rows_to_csv(rows)
+
+
+def _is_batch_model_run(model_run: ModelRun) -> bool:
+    return (
+        model_run.model_name.startswith("rockphypy.batch.")
+        and isinstance(model_run.result.get("rows"), list)
+    )
+
+
+def _flatten_simple_model_run(model_run: ModelRun) -> dict[str, Any]:
+    row: dict[str, Any] = {
+        "run_id": model_run.run_id,
+        "created_at": model_run.created_at.isoformat(),
+        "model_name": model_run.model_name,
+        "model_version": model_run.model_version,
+        "engine": model_run.engine,
+        "saved_analysis_id": model_run.saved_analysis_id,
+        "mlflow_run_id": model_run.mlflow_run_id,
+    }
+    _flatten_mapping("parameters", model_run.parameters, row)
+    _flatten_mapping("result", model_run.result, row)
+    if model_run.assumptions:
+        row["assumptions"] = json.dumps(model_run.assumptions, ensure_ascii=True)
+    return row
+
+
+def _flatten_batch_row(model_run: ModelRun, batch_row: dict[str, Any]) -> dict[str, Any]:
+    row: dict[str, Any] = {
+        "run_id": model_run.run_id,
+        "created_at": model_run.created_at.isoformat(),
+        "model_name": model_run.model_name,
+        "engine": model_run.engine,
+        "saved_analysis_id": model_run.saved_analysis_id,
+        "mlflow_run_id": model_run.mlflow_run_id,
+        "batch_model": model_run.result.get("model"),
+        "row_index": batch_row.get("row_index"),
+        "status": batch_row.get("status"),
+    }
+    _flatten_mapping("parameters", batch_row.get("parameters", {}), row)
+    _flatten_mapping("result", batch_row.get("result", {}), row)
+    if "error" in batch_row:
+        row["error"] = json.dumps(batch_row["error"], ensure_ascii=True)
+    return row
+
+
+def _flatten_mapping(prefix: str, value: Any, row: dict[str, Any]) -> None:
+    if not isinstance(value, dict):
+        return
+
+    for key, nested_value in value.items():
+        column = f"{prefix}.{key}"
+        if isinstance(nested_value, dict):
+            _flatten_mapping(column, nested_value, row)
+        elif isinstance(nested_value, list):
+            row[column] = json.dumps(nested_value, ensure_ascii=True)
+        else:
+            row[column] = nested_value
+
+
+def _rows_to_csv(rows: list[dict[str, Any]]) -> str:
+    fieldnames = sorted({fieldname for row in rows for fieldname in row})
+    output = StringIO()
+    writer = csv.DictWriter(output, fieldnames=fieldnames, lineterminator="\n")
+    writer.writeheader()
+    writer.writerows(rows)
+    return output.getvalue()

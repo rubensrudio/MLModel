@@ -1,3 +1,6 @@
+import csv
+from io import StringIO
+
 from fastapi.testclient import TestClient
 from pytest import MonkeyPatch
 
@@ -346,6 +349,115 @@ def test_run_and_save_rockphypy_batch_rejects_multiple_input_formats(
     )
 
     assert response.status_code == 422
+
+
+def test_export_model_run_json_returns_existing_model_run(monkeypatch: MonkeyPatch) -> None:
+    _force_local_repository(monkeypatch)
+    client = TestClient(create_app())
+
+    created = client.post(
+        "/api/model-runs",
+        json={
+            "model_name": "custom-model",
+            "parameters": {"x": 1},
+            "result": {"y": 2},
+        },
+    ).json()
+
+    response = client.get(f"/api/model-runs/{created['run_id']}/export/json")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["run_id"] == created["run_id"]
+    assert payload["parameters"] == {"x": 1}
+    assert payload["result"] == {"y": 2}
+
+
+def test_export_simple_model_run_csv_returns_flat_row(monkeypatch: MonkeyPatch) -> None:
+    _force_local_repository(monkeypatch)
+    client = TestClient(create_app())
+
+    created = client.post(
+        "/api/model-runs",
+        json={
+            "model_name": "custom-model",
+            "engine": "test-engine",
+            "parameters": {"x": 1},
+            "result": {"y": 2},
+        },
+    ).json()
+
+    response = client.get(f"/api/model-runs/{created['run_id']}/export/csv")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/csv")
+    assert response.headers["content-disposition"] == (
+        f'attachment; filename="model-run-{created["run_id"]}.csv"'
+    )
+    rows = list(csv.DictReader(StringIO(response.text)))
+    assert len(rows) == 1
+    assert rows[0]["run_id"] == created["run_id"]
+    assert rows[0]["model_name"] == "custom-model"
+    assert rows[0]["engine"] == "test-engine"
+    assert rows[0]["parameters.x"] == "1"
+    assert rows[0]["result.y"] == "2"
+
+
+def test_export_batch_model_run_csv_returns_success_and_error_rows(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    _force_local_repository(monkeypatch)
+    client = TestClient(create_app())
+
+    created = client.post(
+        "/api/model-runs/rockphypy/batch",
+        json={
+            "model": "softsand",
+            "rows": [
+                {
+                    "mineral_bulk_modulus_gpa": 37.0,
+                    "mineral_shear_modulus_gpa": 44.0,
+                    "porosity_fraction": 0.25,
+                    "critical_porosity_fraction": 0.4,
+                    "coordination_number": 8.6,
+                    "effective_stress_mpa": 20.0,
+                    "reduced_shear_factor": 0.5,
+                },
+                {
+                    "mineral_bulk_modulus_gpa": 37.0,
+                    "mineral_shear_modulus_gpa": 44.0,
+                    "porosity_fraction": 1.2,
+                    "critical_porosity_fraction": 0.4,
+                    "coordination_number": 8.6,
+                    "effective_stress_mpa": 20.0,
+                    "reduced_shear_factor": 0.5,
+                },
+            ],
+        },
+    ).json()
+
+    response = client.get(f"/api/model-runs/{created['run_id']}/export/csv")
+
+    assert response.status_code == 200
+    rows = list(csv.DictReader(StringIO(response.text)))
+    assert len(rows) == 2
+    assert rows[0]["status"] == "success"
+    assert rows[0]["batch_model"] == "softsand"
+    assert rows[0]["parameters.porosity_fraction"] == "0.25"
+    assert float(rows[0]["result.dry_bulk_modulus_gpa"]) > 0
+    assert rows[1]["status"] == "error"
+    assert rows[1]["parameters.porosity_fraction"] == "1.2"
+    assert "porosity_fraction" in rows[1]["error"]
+
+
+def test_export_model_run_returns_404_for_unknown_id(monkeypatch: MonkeyPatch) -> None:
+    _force_local_repository(monkeypatch)
+    client = TestClient(create_app())
+
+    response = client.get("/api/model-runs/unknown-run/export/csv")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Model run 'unknown-run' was not found."
 
 
 def test_get_model_run_returns_404_for_unknown_id(monkeypatch: MonkeyPatch) -> None:

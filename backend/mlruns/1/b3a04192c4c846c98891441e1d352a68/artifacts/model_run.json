@@ -1,0 +1,96 @@
+{
+  "model_name": "rockphypy.batch.softsand",
+  "model_version": null,
+  "engine": "rockphypy-batch",
+  "parameters": {
+    "model": "softsand",
+    "input_format": "json",
+    "row_count": 2,
+    "rows": [
+      {
+        "mineral_bulk_modulus_gpa": 37.0,
+        "mineral_shear_modulus_gpa": 44.0,
+        "porosity_fraction": 0.25,
+        "critical_porosity_fraction": 0.4,
+        "coordination_number": 8.6,
+        "effective_stress_mpa": 20.0,
+        "reduced_shear_factor": 0.5
+      },
+      {
+        "mineral_bulk_modulus_gpa": 37.0,
+        "mineral_shear_modulus_gpa": 44.0,
+        "porosity_fraction": 1.2,
+        "critical_porosity_fraction": 0.4,
+        "coordination_number": 8.6,
+        "effective_stress_mpa": 20.0,
+        "reduced_shear_factor": 0.5
+      }
+    ]
+  },
+  "result": {
+    "model": "softsand",
+    "row_count": 2,
+    "successful_count": 1,
+    "failed_count": 1,
+    "rows": [
+      {
+        "row_index": 0,
+        "status": "success",
+        "parameters": {
+          "mineral_bulk_modulus_gpa": 37.0,
+          "mineral_shear_modulus_gpa": 44.0,
+          "porosity_fraction": 0.25,
+          "critical_porosity_fraction": 0.4,
+          "coordination_number": 8.6,
+          "effective_stress_mpa": 20.0,
+          "reduced_shear_factor": 0.5
+        },
+        "result": {
+          "dry_bulk_modulus_gpa": 4.130895310378689,
+          "dry_shear_modulus_gpa": 3.93962458158008,
+          "engine": "rockphypy",
+          "assumptions": [
+            "Soft-sand dry-frame model",
+            "Hertz-Mindlin critical porosity endpoint",
+            "Elastic moduli in GPa",
+            "Effective stress in MPa"
+          ]
+        }
+      },
+      {
+        "row_index": 1,
+        "status": "error",
+        "parameters": {
+          "mineral_bulk_modulus_gpa": 37.0,
+          "mineral_shear_modulus_gpa": 44.0,
+          "porosity_fraction": 1.2,
+          "critical_porosity_fraction": 0.4,
+          "coordination_number": 8.6,
+          "effective_stress_mpa": 20.0,
+          "reduced_shear_factor": 0.5
+        },
+        "error": [
+          {
+            "type": "less_than",
+            "loc": [
+              "porosity_fraction"
+            ],
+            "msg": "Input should be less than 1",
+            "input": 1.2,
+            "ctx": {
+              "lt": 1.0
+            },
+            "url": "https://errors.pydantic.dev/2.13/v/less_than"
+          }
+        ]
+      }
+    ]
+  },
+  "assumptions": [
+    "Batch model execution",
+    "Each row is validated independently",
+    "Row-level failures are captured in the result payload"
+  ],
+  "saved_analysis_id": null,
+  "mlflow_run_id": null
+}
