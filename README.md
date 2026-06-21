@@ -1,20 +1,24 @@
 # MLModel / WebLab Petrophysics
 
-MLModel is the initial backend foundation for a WebLab Petrophysics application.
+MLModel is a full-stack WebLab Petrophysics application for petrophysical sample analysis and rock
+physics modeling.
 
-The current implementation focuses on a tested Python API for petrophysical sample exploration,
-basic analytics, unit conversions, persisted saved analyses, persisted model runs, and optional
-MLflow tracking.
+The current implementation includes a tested Python API and an Angular frontend for petrophysical
+sample exploration, basic analytics, unit conversions, persisted saved analyses, persisted model
+runs, exports, and optional MLflow tracking.
 
 ## Current Status
 
 Implemented so far:
 
 - FastAPI backend project under `backend/`
+- Angular frontend project under `frontend/`
 - Health check endpoint
 - Synthetic petrophysical sample fixtures
 - Sample listing and summary endpoints
 - Expanded sample detail endpoint
+- Dashboard, samples, rock-physics, and model-run frontend routes
+- Frontend API proxy for local backend integration
 - Shared sample filters for listing, summary, crossplot, histogram, and boxplot
 - Domain unit conversion helpers
 - Generic crossplot analytics endpoint
@@ -32,7 +36,6 @@ Implemented so far:
 
 Not implemented yet:
 
-- Frontend application
 - DSIS/DSIF corporate data integration
 - Authentication and authorization
 - Production deployment configuration
@@ -60,6 +63,11 @@ MLModel/
       mineralogy_total.csv
       mineralogy_clays.csv
       sonic_velocity.csv
+
+  frontend/
+    angular.json
+    package.json
+    src/app/
 
   infra/
     README.md
